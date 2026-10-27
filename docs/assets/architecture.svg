@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">IntentLock architecture</title>
+  <desc id="desc">A dark architecture diagram connecting the React console to the Express API, deterministic domain core, signed contract, policy engine, Airwallex sandbox adapter, audit stream, and demo store.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#070b14"/><stop offset="1" stop-color="#101a35"/></linearGradient>
+    <linearGradient id="violet" x1="0" x2="1"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient>
+    <linearGradient id="green" x1="0" x2="1"><stop stop-color="#34d399"/><stop offset="1" stop-color="#22d3ee"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="12" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#7183a8"/></marker>
+    <style>
+      .title{font:700 24px Arial,sans-serif;fill:#edf4ff}.subtitle{font:12px monospace;fill:#7f91b2;letter-spacing:1px}.label{font:700 15px Arial,sans-serif;fill:#e5edfb}.small{font:11px Arial,sans-serif;fill:#91a1bd}.mono{font:10px monospace;fill:#7dd3fc;letter-spacing:1px}.box{fill:#101b34;stroke:#33476f;stroke-width:1.5}.line{stroke:#62779f;stroke-width:2;fill:none;marker-end:url(#arrow)}.dash{stroke:#526888;stroke-width:1.5;stroke-dasharray:6 6;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1280" height="720" rx="24" fill="url(#bg)"/>
+  <g opacity=".12" stroke="#91a5ca"><path d="M0 90H1280M0 180H1280M0 270H1280M0 360H1280M0 450H1280M0 540H1280M0 630H1280"/><path d="M90 0V720M180 0V720M270 0V720M360 0V720M450 0V720M540 0V720M630 0V720M720 0V720M810 0V720M900 0V720M990 0V720M1080 0V720M1170 0V720"/></g>
+  <text x="64" y="66" class="title">IntentLock</text><text x="64" y="91" class="subtitle">THE AGENT CAN BE WRONG. THE MONEY CAN'T.</text>
+  <rect x="64" y="150" width="245" height="118" rx="16" class="box"/><circle cx="101" cy="190" r="19" fill="#4f46e5" opacity=".45" filter="url(#glow)"/><text x="86" y="196" class="mono">01</text><text x="86" y="230" class="label">React Console</text><text x="86" y="250" class="small">Intent · login · live trace</text>
+  <rect x="390" y="150" width="245" height="118" rx="16" class="box"/><circle cx="427" cy="190" r="19" fill="#22d3ee" opacity=".45" filter="url(#glow)"/><text x="412" y="196" class="mono">02</text><text x="412" y="230" class="label">Express API</text><text x="412" y="250" class="small">Routes · SSE · webhook boundary</text>
+  <rect x="716" y="150" width="245" height="118" rx="16" class="box"/><circle cx="753" cy="190" r="19" fill="#8b5cf6" opacity=".45" filter="url(#glow)"/><text x="738" y="196" class="mono">03</text><text x="738" y="230" class="label">Typed Domain Core</text><text x="738" y="250" class="small">Money · policy · treasury · auth</text>
+  <rect x="1042" y="150" width="174" height="118" rx="16" class="box"/><circle cx="1077" cy="190" r="19" fill="#34d399" opacity=".45" filter="url(#glow)"/><text x="1062" y="196" class="mono">04</text><text x="1062" y="230" class="label">Airwallex</text><text x="1062" y="250" class="small">Sandbox adapter</text>
+  <path d="M309 209H390M635 209H716M961 209H1042" class="line"/>
+  <rect x="122" y="390" width="300" height="138" rx="16" class="box" stroke="#6655b8"/><text x="150" y="427" class="mono">CONTRACT LAYER</text><text x="150" y="460" class="label">Canonical + HMAC signed</text><text x="150" y="484" class="small">Schema validation · immutable intent ID</text><text x="150" y="505" class="small">Tamper → verification failure</text>
+  <rect x="490" y="390" width="300" height="138" rx="16" class="box" stroke="#2688a5"/><text x="518" y="427" class="mono">CARD LAYER</text><text x="518" y="460" class="label">Controls from contract</text><text x="518" y="484" class="small">Limit · MCC · currency · expiry</text><text x="518" y="505" class="small">Freeze on anomaly</text>
+  <rect x="858" y="390" width="300" height="138" rx="16" class="box" stroke="#238d73"/><text x="886" y="427" class="mono">AUTHORIZATION LAYER</text><text x="886" y="460" class="label">Verify every transaction</text><text x="886" y="484" class="small">Allow, decline, reconcile, audit</text><text x="886" y="505" class="small">Fail closed</text>
+  <path d="M838 268V340H272V390M838 340H640V390M838 340H1008V390" class="dash"/>
+  <rect x="64" y="610" width="1152" height="54" rx="12" fill="#0d1830" stroke="#26385f"/><circle cx="94" cy="637" r="6" fill="#34d399"/><text x="113" y="642" class="label" font-size="13">Audit stream</text><text x="240" y="642" class="small">SSE events · red-team outcomes · signed contract IDs · masked card metadata</text><text x="1030" y="642" class="mono">SANDBOX ONLY</text>
+</svg>
