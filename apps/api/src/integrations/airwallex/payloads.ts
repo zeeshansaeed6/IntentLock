@@ -24,8 +24,8 @@ export function buildVirtualCardPayload(input: CardControls) {
     cardholder_id: input.cardholderId,
     created_by: 'IntentLock',
     form_factor: 'VIRTUAL',
-    is_personalized: false,
-    program: { purpose: 'COMMERCIAL', type: 'PREPAID' },
+    is_personalized: true,
+    program: { purpose: 'COMMERCIAL' },
     authorization_controls: {
       allowed_transaction_count: input.maxTransactions === 1 ? 'SINGLE' : 'MULTIPLE',
       transaction_limits: {
@@ -40,7 +40,6 @@ export function buildVirtualCardPayload(input: CardControls) {
       active_from: input.activeFrom,
       active_to: input.activeTo,
     },
-    activate_on_issue: true,
     client_data: input.clientData,
     metadata: { product: 'intentlock', scope: 'intent-bound' },
   };
