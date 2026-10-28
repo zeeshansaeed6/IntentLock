@@ -35,3 +35,6 @@ export function loadCompanySeed(): CompanySeed {
     };
   }
 }
+
+export const getCompanyConfig = loadCompanySeed;
+

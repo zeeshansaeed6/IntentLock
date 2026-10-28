@@ -11,6 +11,7 @@ import { processWebhook } from './integrations/airwallex/webhooks.js';
 import { getGateway } from './integrations/airwallex/gateway.js';
 import { getRepository } from './store/repository.js';
 import { getDemoUser, loginDemo, logoutDemo } from './auth/demo.js';
+import { getCompanyConfig } from './seed/loader.js';
 
 export const app = express();
 
@@ -188,6 +189,7 @@ app.post('/api/cards/:id/status', async (req, res) => {
 
 app.get('/api/transactions', (_req, res) => res.json(store.transactions));
 app.get('/api/audit', (_req, res) => res.json(store.audit));
+app.get('/api/company', (_req, res) => res.json(getCompanyConfig()));
 
 app.post('/api/reconcile', async (_req, res) => {
   try {

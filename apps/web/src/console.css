@@ -11,3 +11,23 @@
 @keyframes skeleton { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (max-width: 900px) { .data-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.redteam-layout { grid-template-columns: 1fr; } }
 @media (max-width: 720px) { .login-card { padding: 25px; }.login-logo { margin-bottom: 40px; }.workspace-content { width: calc(100% - 32px); padding-top: 25px; }.workspace-heading { align-items: flex-start; flex-direction: column; }.data-grid { grid-template-columns: 1fr; }.table-head { display: none; }.table-row { grid-template-columns: 1.5fr 1fr; gap: 10px; }.table-row small:last-child { text-align: right; }.judge-bar { padding: 0 16px; }.judge-bar strong { display: none; }.judge-progress { width: 70px; } }
+
+.danger-button { min-height: 40px; padding: 0 16px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 700; color: #fff; background: linear-gradient(110deg, #e11d48, #be123c); border: 1px solid rgba(244,63,94,0.4); box-shadow: 0 4px 15px rgba(225,29,72,0.25); transition: all .2s; }
+.danger-button:hover { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 6px 20px rgba(225,29,72,0.35); }
+.ghost-button { min-height: 38px; padding: 0 14px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 600; color: #94a3b8; background: transparent; border: 0; transition: all .2s; }
+.ghost-button:hover { color: #f1f5f9; background: rgba(255,255,255,0.06); }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 5px; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge-green { background: rgba(52,211,153,0.12); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.25); }
+.badge-rose { background: rgba(244,63,94,0.12); color: #fda4af; border: 1px solid rgba(244,63,94,0.25); }
+.badge-amber { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+.badge-violet { background: rgba(139,92,246,0.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.25); }
+.badge-cyan { background: rgba(34,211,238,0.12); color: #67e8f9; border: 1px solid rgba(34,211,238,0.25); }
+.badge-slate { background: rgba(148,163,184,0.12); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.25); }
+
+.toast-green { border-color: rgba(52,211,153,0.3) !important; color: #a7ead1 !important; background: rgba(13,34,37,0.96) !important; }
+.toast-rose { border-color: rgba(244,63,94,0.35) !important; color: #fecdd3 !important; background: rgba(45,17,25,0.96) !important; }
+.toast-amber { border-color: rgba(245,158,11,0.35) !important; color: #fef3c7 !important; background: rgba(45,30,15,0.96) !important; }
+.toast-violet { border-color: rgba(139,92,246,0.35) !important; color: #ede9fe !important; background: rgba(30,20,50,0.96) !important; }
+
+.font-mono { font-family: 'JetBrains Mono', monospace !important; }
+
