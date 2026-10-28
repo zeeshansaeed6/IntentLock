@@ -11,7 +11,9 @@
     "test": "npm run test -w @intentlock/api",
     "smoke": "npm run smoke -w @intentlock/api",
     "seed": "npm run seed -w @intentlock/api",
-    "demo": "npm run seed && concurrently -k -n api,web -c cyan,magenta \"npm run dev -w @intentlock/api\" \"npm run dev -w @intentlock/web\""
+    "demo": "npm run seed && concurrently -k -n api,web -c cyan,magenta \"npm run dev -w @intentlock/api\" \"npm run dev -w @intentlock/web\"",
+    "backup": "npm run backup -w @intentlock/api",
+    "restore": "npm run restore -w @intentlock/api"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
