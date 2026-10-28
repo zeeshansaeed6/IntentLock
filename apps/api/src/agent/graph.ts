@@ -3,8 +3,9 @@ import { signContract, type ContractDraft } from '../domain/contract.js';
 import { decideTreasury } from '../domain/treasury/engine.js';
 import { cardLimitMinor, evaluatePolicy } from '../domain/policy/engine.js';
 import { env } from '../config/env.js';
-import { store, type IntentRecord } from '../store/memory.js';
+import { store, type IntentRecord, type CardRecord } from '../store/memory.js';
 import { eventBus, type AgentEvent } from './events.js';
+import { getGateway } from '../integrations/airwallex/gateway.js';
 
 const weeks = Array.from({ length: 12 }, () => ({ inflowMinor: 0, outflowMinor: 60000 }));
 const projectionInput = { currentBalanceMinor: 2100000, reserveFloorMinor: 1200000, terms: { monthlyPriceMinor: 30000, annualPriceMinor: 500000 }, weeks };
@@ -28,7 +29,38 @@ function scriptedInterpret(userRequest: string) {
   };
 }
 
-export function createIntent(userRequest: string): IntentRecord {
+export async function issueCard(record: IntentRecord): Promise<CardRecord> {
+  const existing = store.cards.find((card) => card.intentId === record.contract.intent_id);
+  if (existing) return existing;
+  const gateway = getGateway();
+  const issued = await gateway.issueCard({
+    intentId: record.contract.intent_id,
+    maxPerTransactionMinor: record.contract.max_per_transaction_minor,
+    maxTotalMinor: record.contract.max_total_minor,
+    allowedMcc: record.contract.allowed_mcc,
+    allowedCurrencies: record.contract.allowed_currencies,
+    activeFrom: record.contract.valid_from,
+    activeTo: record.contract.expires_at,
+    maxTransactions: record.contract.max_transactions,
+  });
+
+  const card: CardRecord = {
+    id: issued.cardId,
+    airwallexCardId: issued.airwallexCardId,
+    intentId: record.contract.intent_id,
+    lastFour: issued.lastFour,
+    status: issued.status,
+    limitMinor: issued.limitMinor,
+    remainingMinor: issued.remainingMinor,
+    isSandbox: issued.isSandbox,
+  };
+  record.cardId = card.id;
+  store.cards.unshift(card);
+  emit('issue_card', 'Virtual card issued', `Masked card ending ${card.lastFour} · limit bound to ${card.limitMinor} minor units.${card.isSandbox ? ' (Airwallex Sandbox)' : ''}`, 'green', { cardId: card.id });
+  return card;
+}
+
+export async function createIntent(userRequest: string): Promise<IntentRecord> {
   emit('interpret', 'Intent interpreted', 'Mapped natural language into a typed purchase request.', 'violet');
   const proposal = scriptedInterpret(userRequest);
   const treasury = decideTreasury(projectionInput);
@@ -67,33 +99,17 @@ export function createIntent(userRequest: string): IntentRecord {
   const contract = signContract(draft, env.INTENT_HMAC_SECRET);
   emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? 'Seven deterministic checks passed.' : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id });
   emit('sign', policy.ok ? 'Intent contract sealed' : 'Safe denial sealed', `HMAC-SHA256 · ${contract.intent_id}`, policy.ok ? 'green' : 'rose');
-  const record = { contract, policy, createdAt: now.toISOString() };
+  const record: IntentRecord = { contract, policy, createdAt: now.toISOString() };
   store.intents.unshift(record);
-  if (record.contract.state === 'ACTIVE') issueDemoCard(record);
+  if (record.contract.state === 'ACTIVE') await issueCard(record);
   return record;
 }
 
-export function issueDemoCard(record: IntentRecord) {
-  const existing = store.cards.find((card) => card.intentId === record.contract.intent_id);
-  if (existing) return existing;
-  const card = {
-    id: `card_demo_${randomUUID().slice(0, 8)}`,
-    intentId: record.contract.intent_id,
-    lastFour: '4242',
-    status: 'ACTIVE' as const,
-    limitMinor: record.contract.max_total_minor,
-    remainingMinor: record.contract.max_total_minor,
-  };
-  store.cards.unshift(card);
-  emit('issue_card', 'Virtual card issued', `Masked card ending ${card.lastFour} · limit bound to ${card.limitMinor} minor units.`, 'green', { cardId: card.id });
-  return card;
-}
-
-export function approveIntent(intentId: string): IntentRecord | undefined {
+export async function approveIntent(intentId: string): Promise<IntentRecord | undefined> {
   const record = store.intents.find((item) => item.contract.intent_id === intentId);
   if (!record || record.contract.state !== 'PENDING_APPROVAL') return undefined;
   record.contract = { ...record.contract, state: 'ACTIVE' };
   emit('approval', 'Human approval received', 'Approval matched the exact signed merchant, amount, currency, and terms.', 'green', { intentId });
-  issueDemoCard(record);
+  await issueCard(record);
   return record;
 }

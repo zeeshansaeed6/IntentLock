@@ -5,8 +5,8 @@ import { runScenario } from './runner.js';
 describe('scripted scenarios', () => {
   beforeEach(() => store.reset());
 
-  it('shows a pass and distinct enforcement declines', () => {
-    const result = runScenario('judge');
+  it('shows a pass and distinct enforcement declines', async () => {
+    const result = await runScenario('judge');
     const reasons = result.transactions.map((transaction) => transaction.reason).filter(Boolean);
     expect(result.transactions.some((transaction) => transaction.outcome === 'ALLOWED')).toBe(true);
     expect(reasons).toEqual(expect.arrayContaining(['LIMIT_EXCEEDED', 'MERCHANT_CATEGORY_NOT_ALLOWED', 'CURRENCY_NOT_ALLOWED']));

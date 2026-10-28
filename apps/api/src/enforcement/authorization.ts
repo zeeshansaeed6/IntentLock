@@ -9,10 +9,23 @@ export type AuthorizationResult = { accepted: boolean; reason?: string; transact
 
 function block(input: AuthorizationInput, reason: string): AuthorizationResult {
   const record = store.intents.find((item) => item.contract.intent_id === input.intentId);
-  const transaction: TransactionRecord = { id: randomUUID(), intentId: input.intentId, merchant: input.merchant, amountMinor: input.amountMinor, currency: input.currency, mcc: input.mcc, outcome: 'BLOCKED', reason, createdAt: new Date().toISOString() };
+  const card = store.cards.find((item) => item.id === input.cardId || item.airwallexCardId === input.cardId);
+  const transaction: TransactionRecord = {
+    id: randomUUID(),
+    intentId: input.intentId,
+    cardId: card?.id ?? input.cardId,
+    airwallexCardId: card?.airwallexCardId,
+    merchant: input.merchant,
+    amountMinor: input.amountMinor,
+    currency: input.currency,
+    mcc: input.mcc,
+    outcome: 'BLOCKED',
+    reason,
+    isSandbox: card?.isSandbox,
+    createdAt: new Date().toISOString(),
+  };
   store.transactions.unshift(transaction);
   store.addAudit({ type: 'authorization_blocked', message: `${reason} · ${input.merchant}`, tone: 'rose', metadata: { intentId: input.intentId, reason } });
-  const card = store.cards.find((item) => item.id === input.cardId);
   if (card && card.status === 'ACTIVE') {
     card.status = 'FROZEN';
     if (record) record.contract = { ...record.contract, state: 'FROZEN' };
@@ -23,7 +36,7 @@ function block(input: AuthorizationInput, reason: string): AuthorizationResult {
 
 export function authorize(input: AuthorizationInput): AuthorizationResult {
   const record = store.intents.find((item) => item.contract.intent_id === input.intentId);
-  const card = store.cards.find((item) => item.id === input.cardId);
+  const card = store.cards.find((item) => item.id === input.cardId || item.airwallexCardId === input.cardId);
   const now = input.now ?? new Date();
   if (!record || !card) return block(input, 'UNKNOWN_INTENT_OR_CARD');
   if (!verifyContract(record.contract, env.INTENT_HMAC_SECRET)) return block(input, 'INVALID_CONTRACT_SIGNATURE');
@@ -36,8 +49,27 @@ export function authorize(input: AuthorizationInput): AuthorizationResult {
   if (input.amountMinor > record.contract.max_per_transaction_minor) return block(input, 'LIMIT_EXCEEDED');
   if (input.amountMinor > card.remainingMinor) return block(input, 'ALL_TIME_LIMIT_EXCEEDED');
 
+  const allowedCount = store.transactions.filter(
+    (tx) => tx.intentId === input.intentId && tx.outcome === 'ALLOWED'
+  ).length;
+  if (allowedCount >= record.contract.max_transactions) {
+    return block(input, 'MAX_TRANSACTIONS_EXCEEDED');
+  }
+
   card.remainingMinor -= input.amountMinor;
-  const transaction: TransactionRecord = { id: randomUUID(), intentId: input.intentId, merchant: input.merchant, amountMinor: input.amountMinor, currency: input.currency, mcc: input.mcc, outcome: 'ALLOWED', createdAt: now.toISOString() };
+  const transaction: TransactionRecord = {
+    id: randomUUID(),
+    intentId: input.intentId,
+    cardId: card.id,
+    airwallexCardId: card.airwallexCardId,
+    merchant: input.merchant,
+    amountMinor: input.amountMinor,
+    currency: input.currency,
+    mcc: input.mcc,
+    outcome: 'ALLOWED',
+    isSandbox: card.isSandbox,
+    createdAt: now.toISOString(),
+  };
   store.transactions.unshift(transaction);
   store.addAudit({ type: 'authorization_allowed', message: `Authorization cleared · ${input.merchant}`, tone: 'green', metadata: { intentId: input.intentId, transactionId: transaction.id } });
   emit('execute', 'Authorization verified', `Allowed ${input.currency} ${input.amountMinor / 100} at ${input.merchant}.`, 'green', { transactionId: transaction.id });

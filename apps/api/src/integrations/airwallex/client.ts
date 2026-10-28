@@ -73,8 +73,9 @@ export class AirwallexClient {
     return this.request('/api/v1/issuing/cardholders/create', { method: 'POST', body: buildCardholderPayload(email) });
   }
 
-  async createVirtualCard(input: CardControls) {
-    return this.request('/api/v1/issuing/cards/create', { method: 'POST', body: buildVirtualCardPayload(input) });
+  async createVirtualCard(input: CardControls | ReturnType<typeof buildVirtualCardPayload>) {
+    const body = 'cardholder_id' in input ? input : buildVirtualCardPayload(input);
+    return this.request('/api/v1/issuing/cards/create', { method: 'POST', body });
   }
 
   async getCardLimits(cardId: string) {
@@ -82,7 +83,8 @@ export class AirwallexClient {
   }
 
   async updateCard(cardId: string, cardStatus: 'ACTIVE' | 'FROZEN' | 'CLOSED') {
-    return this.request(`/api/v1/issuing/cards/${encodeURIComponent(cardId)}/update`, { method: 'POST', body: { request_id: randomUUID(), card_status: cardStatus } });
+    const airwallexStatus = cardStatus === 'FROZEN' ? 'INACTIVE' : cardStatus;
+    return this.request(`/api/v1/issuing/cards/${encodeURIComponent(cardId)}/update`, { method: 'POST', body: { request_id: randomUUID(), card_status: airwallexStatus } });
   }
 
   async simulateIssuing(input: Parameters<typeof buildIssuingSimulationPayload>[0]) {
@@ -101,8 +103,25 @@ export class AirwallexClient {
     return this.request('/api/v1/simulation/issuing/refund', { method: 'POST', body: { request_id: randomUUID(), card_id: input.cardId, card_transaction_lifecycle_id: input.lifecycleId, transaction_amount: input.amountMajor, transaction_currency: input.currency } });
   }
 
-  async listIssuingTransactions() {
-    return this.request('/api/v1/issuing/transactions');
+  async listIssuingTransactions(params?: { cardId?: string; pageSize?: number }) {
+    const searchParams = new URLSearchParams();
+    if (params?.cardId) searchParams.set('card_id', params.cardId);
+    if (params?.pageSize) searchParams.set('page_size', String(params.pageSize));
+    const query = searchParams.toString();
+    return this.request(`/api/v1/issuing/transactions${query ? `?${query}` : ''}`);
+  }
+
+  async getCurrentBalance(currency = 'USD'): Promise<{ available_amount?: number; total_amount?: number; currency?: string } | undefined> {
+    const res = (await this.request(`/api/v1/balances/current?currency=${encodeURIComponent(currency)}`)) as {
+      items?: Array<{ available_amount?: number; total_amount?: number; currency?: string }>;
+      available_amount?: number;
+      total_amount?: number;
+      currency?: string;
+    };
+    if (res && Array.isArray(res.items)) {
+      return res.items.find((i) => i.currency === currency) ?? res.items[0];
+    }
+    return res;
   }
 
   private async request(path: string, options: { method?: string; body?: unknown } = {}, retryAuth = true): Promise<unknown> {

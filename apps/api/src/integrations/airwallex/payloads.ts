@@ -9,6 +9,7 @@ export type CardControls = {
   activeFrom: string;
   activeTo: string;
   clientData?: string;
+  maxTransactions?: number;
 };
 
 const toMajorUnits = (minor: number): number => {
@@ -26,7 +27,7 @@ export function buildVirtualCardPayload(input: CardControls) {
     is_personalized: false,
     program: { purpose: 'COMMERCIAL', type: 'PREPAID' },
     authorization_controls: {
-      allowed_transaction_count: 'MULTIPLE',
+      allowed_transaction_count: input.maxTransactions === 1 ? 'SINGLE' : 'MULTIPLE',
       transaction_limits: {
         currency: 'USD',
         limits: [

@@ -42,6 +42,14 @@ export const healthSchema = z.object({
   service: z.literal('intentlock-api'),
   mode: z.string(),
   airwallex: z.enum(['not_configured', 'sandbox']),
+  fundedBalance: z
+    .object({
+      currency: z.string(),
+      availableMinor: z.number().int(),
+      totalMinor: z.number().int(),
+    })
+    .optional(),
 });
 
 export type HealthResponse = z.infer<typeof healthSchema>;
+

@@ -8,8 +8,33 @@ export type IntentRecord = {
   createdAt: string;
 };
 
-export type CardRecord = { id: string; intentId: string; lastFour: string; status: 'ACTIVE' | 'FROZEN' | 'CLOSED'; limitMinor: number; remainingMinor: number };
-export type TransactionRecord = { id: string; intentId: string; merchant: string; amountMinor: number; currency: string; mcc: string; outcome: 'ALLOWED' | 'BLOCKED'; reason?: string; createdAt: string };
+export type CardRecord = {
+  id: string;
+  intentId: string;
+  airwallexCardId?: string;
+  lastFour: string;
+  status: 'ACTIVE' | 'FROZEN' | 'CLOSED';
+  limitMinor: number;
+  remainingMinor: number;
+  isSandbox?: boolean;
+};
+
+export type TransactionRecord = {
+  id: string;
+  intentId: string;
+  cardId?: string;
+  airwallexTransactionId?: string;
+  airwallexCardId?: string;
+  merchant: string;
+  amountMinor: number;
+  currency: string;
+  mcc: string;
+  outcome: 'ALLOWED' | 'BLOCKED';
+  reason?: string;
+  rawFailureReason?: string;
+  isSandbox?: boolean;
+  createdAt: string;
+};
 export type AuditRecord = { id: string; type: string; message: string; tone: 'violet' | 'green' | 'rose' | 'amber'; createdAt: string; metadata?: Record<string, string> };
 
 class MemoryStore {
