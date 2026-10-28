@@ -14,7 +14,7 @@ const scriptedClient = new ScriptedLLM();
 export function getLLMClient(): LLMClient {
   const provider = (env.LLM_PROVIDER || 'scripted').toLowerCase();
 
-  if (provider === 'gemini') {
+  if (provider === 'gemini' || provider === 'google') {
     return new GeminiLLM();
   }
   if (provider === 'openai') {
