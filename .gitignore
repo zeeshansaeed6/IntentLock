@@ -8,3 +8,9 @@ dist/
 .opencode/
 opencode.jsonc
 *.tsbuildinfo
+backups/
+*.dump
+*.pem
+*.key
+*.cert
+*.crt
