@@ -39,6 +39,7 @@ export async function issueCard(record: IntentRecord): Promise<CardRecord> {
     status: issued.status,
     limitMinor: issued.limitMinor,
     remainingMinor: issued.remainingMinor,
+    owner_id: record.owner_id,
     isSandbox: issued.isSandbox,
   };
   record.cardId = card.id;
@@ -47,7 +48,7 @@ export async function issueCard(record: IntentRecord): Promise<CardRecord> {
   return card;
 }
 
-export async function createIntent(userRequest: string, untrustedContext?: string): Promise<IntentRecord> {
+export async function createIntent(userRequest: string, untrustedContext?: string, ownerId?: string): Promise<IntentRecord> {
   emit('interpret', 'Intent interpreted', 'Mapped natural language into a typed purchase request.', 'violet');
   const llm = getLLMClient();
   const proposal = await llm.generateProposal(userRequest, untrustedContext);
@@ -111,12 +112,13 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
     },
     rationale: proposal.rationale,
     state,
+    owner_id: ownerId,
   };
 
   const contract = signContract(draft, env.INTENT_HMAC_SECRET);
   emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? `Deterministic policy checks passed (${policy.requiresApproval ? 'awaiting human approval' : 'auto-approved'}).` : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id });
   emit('sign', policy.ok ? 'Intent contract sealed' : 'Safe denial sealed', `HMAC-SHA256 · ${contract.intent_id}`, policy.ok ? 'green' : 'rose');
-  const record: IntentRecord = { contract, policy, createdAt: now.toISOString() };
+  const record: IntentRecord = { contract, policy, owner_id: ownerId, createdAt: now.toISOString() };
   store.intents.unshift(record);
   if (record.contract.state === 'ACTIVE') await issueCard(record);
   return record;

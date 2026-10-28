@@ -53,6 +53,7 @@ export function contractTerms(contract: IntentContract | ContractDraft): Contrac
     requires_human_approval,
     policy_snapshot,
     rationale,
+    owner_id: (contract as any).owner_id,
   };
 }
 

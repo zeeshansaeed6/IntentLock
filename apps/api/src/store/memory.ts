@@ -5,6 +5,7 @@ export type IntentRecord = {
   contract: IntentContract;
   policy: { ok: boolean; failures: { rule: string; reason: string }[]; requiresApproval: boolean };
   cardId?: string;
+  owner_id?: string;
   createdAt: string;
 };
 
@@ -16,6 +17,7 @@ export type CardRecord = {
   status: 'ACTIVE' | 'FROZEN' | 'CLOSED';
   limitMinor: number;
   remainingMinor: number;
+  owner_id?: string;
   isSandbox?: boolean;
 };
 
@@ -32,10 +34,19 @@ export type TransactionRecord = {
   outcome: 'ALLOWED' | 'BLOCKED';
   reason?: string;
   rawFailureReason?: string;
+  owner_id?: string;
   isSandbox?: boolean;
   createdAt: string;
 };
-export type AuditRecord = { id: string; type: string; message: string; tone: 'violet' | 'green' | 'rose' | 'amber'; createdAt: string; metadata?: Record<string, string> };
+export type AuditRecord = {
+  id: string;
+  type: string;
+  message: string;
+  tone: 'violet' | 'green' | 'rose' | 'amber';
+  owner_id?: string;
+  createdAt: string;
+  metadata?: Record<string, string>;
+};
 
 class MemoryStore {
   readonly intents: IntentRecord[] = [];

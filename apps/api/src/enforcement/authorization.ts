@@ -33,6 +33,7 @@ function block(input: AuthorizationInput, reason: string): AuthorizationResult {
     mcc: input.mcc,
     outcome: 'BLOCKED',
     reason,
+    owner_id: record?.owner_id || card?.owner_id,
     isSandbox: card?.isSandbox,
     createdAt: new Date().toISOString(),
   };
@@ -41,6 +42,7 @@ function block(input: AuthorizationInput, reason: string): AuthorizationResult {
     type: 'authorization_blocked',
     message: `${reason} · ${input.merchant}`,
     tone: 'rose',
+    owner_id: record?.owner_id || card?.owner_id,
     metadata: { intentId: input.intentId, reason },
   });
 
@@ -91,11 +93,18 @@ export function authorize(input: AuthorizationInput): AuthorizationResult {
     currency: input.currency,
     mcc: input.mcc,
     outcome: 'ALLOWED',
+    owner_id: record.owner_id || card.owner_id,
     isSandbox: card.isSandbox,
     createdAt: now.toISOString(),
   };
   store.transactions.unshift(transaction);
-  store.addAudit({ type: 'authorization_allowed', message: `Authorization cleared · ${input.merchant}`, tone: 'green', metadata: { intentId: input.intentId, transactionId: transaction.id } });
+  store.addAudit({
+    type: 'authorization_allowed',
+    message: `Authorization cleared · ${input.merchant}`,
+    tone: 'green',
+    owner_id: record.owner_id || card.owner_id,
+    metadata: { intentId: input.intentId, transactionId: transaction.id },
+  });
   emit('execute', 'Authorization verified', `Allowed ${input.currency} ${input.amountMinor / 100} at ${input.merchant}.`, 'green', { transactionId: transaction.id });
   return { accepted: true, transaction };
 }

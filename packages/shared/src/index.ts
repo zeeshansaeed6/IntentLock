@@ -32,6 +32,7 @@ export const contractSchema = z.object({
   }),
   rationale: z.string(),
   state: intentStateSchema,
+  owner_id: z.string().optional(),
   signature: z.string(),
 });
 
