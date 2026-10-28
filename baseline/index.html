@@ -1,0 +1,2824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baseline — Tennis Club &amp; Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500&display=swap" rel="stylesheet">
+  
+  <script type="importmap">
+  {
+    "imports": {
+      "lenis": "https://cdn.jsdelivr.net/npm/lenis@1.1.18/+esm"
+    }
+  }
+  </script>
+
+  <style>
+    /* Palette & Variables */
+    :root {
+      --background: #ffffff;
+      --foreground: #0a0a0a;
+      --brand: #2563c9;       /* primary royal blue */
+      --brand-deep: #0f2f63;  /* deep navy — hero/stats/footer base */
+      --brand-light: #5790e6; /* light blue accent / focus ring */
+      --accent-teal: #0b6e97; /* blue court caption tint */
+      --surface: #f4f4f4;     /* off-white section bg */
+      --surface-card: #ffffff;
+      --ink: #0a0a0a;         /* near-black headings */
+      --ink-soft: #717784;    /* muted body */
+      --ghost: #d7dae1;       /* oversized ghost text */
+      --hairline: #e6e8ec;    /* subtle borders */
+      --on-brand: #ffffff;    /* text on navy */
+
+      /* radii */
+      --radius-card: 1.5rem;
+      --radius-card-lg: 2rem;
+      --radius-pill: 62.5rem;
+      --radius-xl: 0.75rem;
+
+      /* transitions */
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+      --ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    /* CSS Reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    button {
+      font: inherit;
+      color: inherit;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+    ul, ol {
+      list-style: none;
+    }
+
+    /* Adaptive Rem Grid */
+    html {
+      font-size: 16px;
+      scroll-behavior: auto;
+    }
+    @media (max-width: 1920px) { html { font-size: 0.833333vw; } }
+    @media (max-width: 1440px) { html { font-size: 1.111111vw; } }
+    @media (max-width: 1024px) { html { font-size: 1.5625vw;   } }
+    @media (max-width: 640px)  { html { font-size: 4.444444vw; } }
+
+    body {
+      min-height: 100vh;
+      background: var(--background);
+      color: var(--foreground);
+      font-family: "Onest", system-ui, sans-serif;
+      font-weight: 400;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--brand-light);
+      outline-offset: 2px;
+    }
+
+    /* Page Framing Main Container */
+    main {
+      width: 100%;
+      overflow-x: clip;
+      padding: 0.5rem;
+    }
+    @media (min-width: 640px) {
+      main {
+        padding: 0.75rem;
+      }
+    }
+
+    /* Typography Utilities */
+    .font-medium { font-weight: 500; }
+    .uppercase { text-transform: uppercase; }
+    .tracking-tight { letter-spacing: -0.02em; }
+    .tracking-wide { letter-spacing: 0.1em; }
+    .tracking-widest { letter-spacing: 0.2em; }
+    .leading-none { line-height: 1; }
+    .leading-tight { line-height: 0.95; }
+    .leading-relaxed { line-height: 1.6; }
+
+    /* Clip-mask text reveal wrappers */
+    .clip-line, .clip-word {
+      display: inline-block;
+      overflow: hidden;
+      vertical-align: top;
+      padding-bottom: 0.14em;
+    }
+    .clip-word-ghost {
+      display: inline-block;
+      overflow: hidden;
+      vertical-align: top;
+      padding-bottom: 0.12em;
+    }
+    .clip-inner {
+      display: inline-block;
+      transform: translateY(115%);
+      opacity: 0;
+      transition: transform 1.1s var(--ease-out-expo), opacity 0.8s ease;
+      will-change: transform, opacity;
+    }
+    .revealed .clip-inner,
+    .is-revealed .clip-inner {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Shared Component: Eyebrow */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+    }
+    .eyebrow-dot {
+      width: 0.375rem;
+      height: 0.375rem;
+      border-radius: var(--radius-pill);
+    }
+    .eyebrow.dark {
+      color: var(--ink-soft);
+    }
+    .eyebrow.dark .eyebrow-dot {
+      background: var(--brand);
+    }
+    .eyebrow.light {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .eyebrow.light .eyebrow-dot {
+      background: var(--brand-light);
+    }
+
+    /* Shared Component: Pill Button */
+    .pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-radius: var(--radius-pill);
+      padding: 0.875rem 1.75rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+      white-space: nowrap;
+    }
+    .pill-btn svg {
+      width: 1rem;
+      height: 1rem;
+      transition: transform 0.25s var(--ease-out-expo);
+    }
+    @media (min-width: 769px) {
+      .pill-btn:hover svg {
+        transform: translateX(5px);
+      }
+    }
+    .pill-btn.light {
+      background: #ffffff;
+      color: var(--brand-deep);
+    }
+    @media (min-width: 769px) {
+      .pill-btn.light:hover {
+        background: var(--brand-light);
+        color: #ffffff;
+      }
+    }
+    .pill-btn.solid {
+      background: var(--ink);
+      color: #ffffff;
+    }
+    @media (min-width: 769px) {
+      .pill-btn.solid:hover {
+        background: var(--brand-deep);
+      }
+    }
+    .pill-btn.outline {
+      border: 1px solid currentColor;
+      color: var(--ink);
+    }
+    @media (min-width: 769px) {
+      .pill-btn.outline:hover {
+        background: var(--ink);
+        color: #ffffff;
+      }
+    }
+
+    /* Shared Component: Arrow Button (Carousel) */
+    .arrow-btn {
+      width: 3rem;
+      height: 3rem;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-pill);
+      transition: all 0.2s ease;
+    }
+    @media (min-width: 640px) {
+      .arrow-btn {
+        width: 3.5rem;
+        height: 3.5rem;
+      }
+    }
+    .arrow-btn svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      transition: transform 0.25s var(--ease-out-expo);
+    }
+    @media (min-width: 769px) {
+      .arrow-btn:hover svg {
+        transform: scale(1.15);
+      }
+      .arrow-btn.prev:hover svg {
+        transform: scaleX(-1) scale(1.15);
+      }
+    }
+    .arrow-btn.prev svg {
+      transform: scaleX(-1);
+    }
+    .arrow-btn.outline {
+      border: 1px solid var(--hairline);
+      color: var(--ink);
+      background: transparent;
+    }
+    @media (min-width: 769px) {
+      .arrow-btn.outline:hover {
+        border-color: var(--ink);
+      }
+    }
+    .arrow-btn.solid {
+      background: var(--ink);
+      border: 1px solid var(--ink);
+      color: #ffffff;
+    }
+    @media (min-width: 769px) {
+      .arrow-btn.solid:hover {
+        background: var(--brand-deep);
+      }
+    }
+
+    /* Shared Component: Carousel Dots */
+    .carousel-dots {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .carousel-dot {
+      padding: 0.375rem;
+      cursor: pointer;
+    }
+    .carousel-dot-inner {
+      display: block;
+      height: 0.375rem;
+      border-radius: var(--radius-pill);
+      transition: width 0.3s var(--ease-out-expo), background-color 0.3s ease;
+    }
+    .carousel-dots.light .carousel-dot-inner {
+      background: rgba(255, 255, 255, 0.4);
+      width: 0.375rem;
+    }
+    .carousel-dots.light .carousel-dot.active .carousel-dot-inner {
+      background: #ffffff;
+      width: 1.25rem;
+    }
+    .carousel-dots.dark .carousel-dot-inner {
+      background: var(--ghost);
+      width: 0.375rem;
+    }
+    .carousel-dots.dark .carousel-dot.active .carousel-dot-inner {
+      background: var(--ink);
+      width: 1.25rem;
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 0) LOADER CURTAIN                                                     */
+    /* ---------------------------------------------------------------------- */
+    #loader-curtain {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: var(--brand-deep);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      transition: transform 0.85s var(--ease-in-out-cubic);
+      will-change: transform;
+    }
+    .loader-wordmark {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.5rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.6s ease, transform 0.6s var(--ease-out-expo);
+    }
+    .loader-wordmark.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .loader-progress-track {
+      width: 10rem;
+      height: 1px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.2);
+      overflow: hidden;
+      position: relative;
+    }
+    .loader-progress-fill {
+      position: absolute;
+      inset: 0;
+      background: #ffffff;
+      transform-origin: left;
+      transform: scaleX(0);
+      transition: transform 1.28s var(--ease-in-out-cubic);
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 1) HERO SECTION & HEADER                                              */
+    /* ---------------------------------------------------------------------- */
+    .hero-section {
+      background: var(--brand-deep);
+      color: #ffffff;
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      border-radius: var(--radius-card-lg);
+      height: calc(100svh - 1rem);
+      min-height: 36rem;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (min-width: 640px) {
+      .hero-section {
+        height: calc(100svh - 1.5rem);
+      }
+    }
+
+    .hero-plate {
+      position: absolute;
+      inset: 0;
+      z-index: -10;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .hero-plate-inner {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -16%;
+      height: 132%;
+      width: 100%;
+      will-change: transform;
+    }
+    .hero-plate-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .hero-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(15, 47, 99, 0.65),
+        rgba(15, 47, 99, 0.35),
+        rgba(15, 47, 99, 0.75)
+      );
+    }
+
+    /* Site Header */
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 1.5rem 0;
+      font-size: 0.75rem;
+      color: #ffffff;
+      z-index: 20;
+    }
+    @media (min-width: 640px) {
+      .site-header {
+        padding: 2rem 2.5rem 0;
+      }
+    }
+    .header-nav-left {
+      display: none;
+      flex: 1;
+      gap: 2rem;
+      align-items: center;
+    }
+    @media (min-width: 1024px) {
+      .header-nav-left {
+        display: flex;
+      }
+    }
+    .header-nav-left a {
+      color: rgba(255, 255, 255, 0.9);
+      transition: color 0.2s ease;
+    }
+    .header-nav-left a:hover {
+      color: #ffffff;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+    }
+    @media (min-width: 1024px) {
+      .header-brand {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      justify-content: flex-end;
+    }
+    @media (min-width: 640px) {
+      .header-right {
+        gap: 1.25rem;
+      }
+    }
+    @media (min-width: 1024px) {
+      .header-right {
+        flex: 1;
+      }
+    }
+    .header-book-btn {
+      display: none;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    @media (min-width: 640px) {
+      .header-book-btn {
+        display: inline-block;
+      }
+    }
+    .header-book-btn:hover {
+      text-decoration: underline;
+    }
+    .burger-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      transition: background-color 0.2s ease;
+    }
+    .burger-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .burger-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .burger-line {
+      width: 1rem;
+      height: 1px;
+      background: #ffffff;
+    }
+
+    /* Giant Hero Title */
+    .hero-title-wrap {
+      padding: 1rem 1.5rem 0;
+      margin-top: 2rem;
+    }
+    @media (min-width: 640px) {
+      .hero-title-wrap {
+        padding: 1rem 2.5rem 0;
+      }
+    }
+    .hero-title {
+      font-size: 12.5vw;
+      font-weight: 500;
+      text-transform: uppercase;
+      line-height: 0.85;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    /* Hero Bottom Row */
+    .hero-bottom {
+      margin-top: auto;
+      padding: 0 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .hero-bottom {
+        padding: 0 2.5rem 2.5rem;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+    }
+    .hero-tagline {
+      font-size: 2.4rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .hero-right-cluster {
+      display: flex;
+      align-items: flex-end;
+      gap: 1rem;
+    }
+
+    /* Collection Slider (Hero) */
+    .collection-slider-wrap {
+      display: none;
+      width: 16rem;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    @media (min-width: 768px) {
+      .collection-slider-wrap {
+        display: flex;
+      }
+    }
+    .glass-card {
+      border-radius: var(--radius-card);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(15, 47, 99, 0.2);
+    }
+    .collection-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .collection-img-box {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .collection-img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .collection-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .collection-brand {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .collection-name {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+    .collection-cta {
+      font-size: 0.65rem;
+      text-decoration: underline;
+      margin-top: 0.2rem;
+    }
+
+    /* Membership Card (Hero) */
+    .membership-card {
+      width: 100%;
+      max-width: 20rem;
+      display: flex;
+      align-items: stretch;
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
+    @media (min-width: 640px) {
+      .membership-card {
+        width: 15rem;
+      }
+    }
+    .membership-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .membership-val {
+      font-size: 1.875rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .avatar-stack {
+      display: flex;
+      align-items: center;
+      margin-left: 0.25rem;
+    }
+    .avatar-dot {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(15, 47, 99, 0.4);
+      margin-left: -0.5rem;
+    }
+    .avatar-dot:first-child {
+      margin-left: 0;
+    }
+    .membership-caption {
+      font-size: 0.65rem;
+      opacity: 0.8;
+    }
+    .membership-img-box {
+      width: 4rem;
+      aspect-ratio: 3/4;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .membership-img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 2) TRUST SECTION                                                      */
+    /* ---------------------------------------------------------------------- */
+    .trust-section {
+      background: var(--background);
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      padding: 4rem 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .trust-section {
+        padding: 5rem 2.5rem;
+      }
+    }
+    .trust-badges-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      position: relative;
+      z-index: 20;
+    }
+    @media (min-width: 640px) {
+      .trust-badges-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+    }
+    .percent-badge {
+      width: 7rem;
+      height: 7rem;
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    @media (min-width: 640px) {
+      .percent-badge {
+        width: 8rem;
+        height: 8rem;
+      }
+    }
+    .percent-num {
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+    .percent-sub {
+      font-size: 0.6rem;
+      color: var(--ink-soft);
+      max-width: 7em;
+      line-height: 1.3;
+    }
+
+    .trust-badge-card {
+      max-width: 28rem;
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    @media (min-width: 640px) {
+      .trust-badge-card {
+        padding: 1.5rem;
+        gap: 1.25rem;
+      }
+    }
+    .badge-index-chip {
+      width: fit-content;
+      border-radius: var(--radius-xl);
+      background: var(--background);
+      padding: 0.5rem 1rem;
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+    .trust-badge-card h3 {
+      font-size: 1.125rem;
+      font-weight: 500;
+    }
+    .trust-badge-card p {
+      font-size: 0.75rem;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+
+    /* Oversized Ghost Heading */
+    .ghost-heading-wrap {
+      pointer-events: none;
+      user-select: none;
+      position: relative;
+      z-index: 0;
+      max-width: 88rem;
+      margin: 3rem auto 0;
+      font-size: 8.2vw;
+      font-weight: 500;
+      text-transform: uppercase;
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+    }
+    .ghost-row {
+      display: flex;
+      justify-content: space-between;
+    }
+    .ghost-word {
+      display: inline-block;
+      color: var(--ghost);
+      will-change: transform;
+    }
+    .ghost-word.highlight {
+      color: var(--ink);
+    }
+
+    /* Center Coach Card */
+    .coach-card-anchor {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      margin: 2rem 0;
+    }
+    @media (min-width: 640px) {
+      .coach-card-anchor {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        margin: 0;
+      }
+    }
+    .coach-card {
+      width: 13rem;
+      aspect-ratio: 3/4;
+      border-radius: var(--radius-card);
+      background: var(--brand);
+      overflow: hidden;
+      position: relative;
+      transform: rotate(6deg);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+    }
+    @media (min-width: 640px) {
+      .coach-card {
+        width: 16rem;
+      }
+    }
+    .coach-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.4s ease;
+    }
+    .coach-glass-caption {
+      position: absolute;
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: 0.75rem;
+      border-radius: var(--radius-xl);
+      background: rgba(15, 47, 99, 0.4);
+      color: #ffffff;
+      backdrop-filter: blur(8px);
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+    .coach-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .coach-role {
+      font-size: 0.65rem;
+      opacity: 0.8;
+    }
+
+    .trust-controls-row {
+      position: relative;
+      z-index: 20;
+      margin-top: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    @media (min-width: 640px) {
+      .trust-controls-row {
+        margin-top: 6rem;
+      }
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 3) PROGRAMS SECTION                                                   */
+    /* ---------------------------------------------------------------------- */
+    .programs-section {
+      background: var(--surface);
+      padding: 6rem 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .programs-section {
+        padding: 6rem 2.5rem;
+      }
+    }
+    .section-title-stacked {
+      font-size: 3rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      margin-top: 1rem;
+    }
+    @media (max-width: 640px) {
+      .section-title-stacked {
+        font-size: 2.25rem;
+      }
+    }
+    .programs-list {
+      margin-top: 3.5rem;
+    }
+    .program-row {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 1.75rem 0;
+      border-top: 1px solid var(--hairline);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .program-row:last-child {
+      border-bottom: 1px solid var(--hairline);
+    }
+    .program-row:focus-visible {
+      background: var(--background);
+    }
+    .program-idx {
+      width: 2.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink-soft);
+      flex-shrink: 0;
+    }
+    .program-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    @media (min-width: 768px) {
+      .program-main {
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 2rem;
+      }
+    }
+    .program-name {
+      font-size: 1.5rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+    @media (min-width: 640px) {
+      .program-name {
+        font-size: 1.875rem;
+      }
+    }
+    .program-desc {
+      font-size: 0.875rem;
+      color: var(--ink-soft);
+      max-width: 28rem;
+    }
+    .program-arrow {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--hairline);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .program-arrow svg {
+      width: 1.125rem;
+      height: 1.125rem;
+      opacity: 0.55;
+      transition: transform 0.25s var(--ease-out-expo), opacity 0.25s ease;
+    }
+    @media (min-width: 769px) {
+      .program-row:hover .program-arrow svg {
+        transform: translateX(8px);
+        opacity: 1;
+      }
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 4) FACILITIES SECTION                                                 */
+    /* ---------------------------------------------------------------------- */
+    .facilities-section {
+      background: var(--background);
+      border-radius: var(--radius-card-lg);
+      margin-top: -2.5rem;
+      position: relative;
+      z-index: 10;
+      padding: 4rem 1.5rem 5rem;
+    }
+    @media (min-width: 640px) {
+      .facilities-section {
+        padding: 4rem 2.5rem 5rem;
+      }
+    }
+    .facilities-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+      align-items: end;
+    }
+    @media (min-width: 768px) {
+      .facilities-grid {
+        grid-template-columns: 1fr 1.25fr;
+      }
+    }
+    .facilities-intro {
+      max-width: 24rem;
+    }
+    .facilities-icon-img {
+      width: 4rem;
+      height: 4rem;
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      object-fit: cover;
+    }
+    .facilities-body-words {
+      font-size: 0.875rem;
+      color: var(--ink-soft);
+      max-width: 20rem;
+      margin-top: 1.5rem;
+      line-height: 1.6;
+    }
+    .facilities-body-words .clip-word {
+      padding-bottom: 0.1em;
+    }
+
+    .facilities-tiles {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-end;
+    }
+    .court-card {
+      flex: 1;
+      aspect-ratio: 3/4;
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      background: var(--surface);
+      position: relative;
+    }
+    .court-card.staggered {
+      margin-bottom: 2rem;
+    }
+    .court-card-inner {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.4s var(--ease-out-expo);
+    }
+    @media (min-width: 769px) {
+      .court-card:hover .court-card-inner {
+        transform: scale(1.03);
+      }
+    }
+    .court-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .court-caption {
+      position: absolute;
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: 0.75rem;
+      border-radius: var(--radius-xl);
+      color: #ffffff;
+      backdrop-filter: blur(8px);
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .court-caption.clay {
+      background: rgba(15, 47, 99, 0.4);
+    }
+    .court-caption.blue {
+      background: rgba(11, 110, 151, 0.55);
+    }
+    .court-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .court-desc {
+      font-size: 0.65rem;
+      opacity: 0.85;
+      line-height: 1.4;
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 5) STATS SECTION                                                      */
+    /* ---------------------------------------------------------------------- */
+    .stats-section {
+      background: var(--brand-deep);
+      color: #ffffff;
+      border-radius: var(--radius-card-lg);
+      margin-top: 0.75rem;
+      padding: 5rem 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .stats-section {
+        padding: 5rem 2.5rem;
+      }
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 3rem 2rem;
+      margin-top: 4rem;
+    }
+    @media (min-width: 1024px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    .stat-cell {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      padding-top: 1.25rem;
+    }
+    .stat-value {
+      font-size: 3.75rem;
+      font-weight: 500;
+      line-height: 0.9;
+      letter-spacing: -0.02em;
+    }
+    @media (min-width: 640px) {
+      .stat-value {
+        font-size: 4.5rem;
+      }
+    }
+    .stat-label {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.65);
+      margin-top: 0.75rem;
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 6) TESTIMONIALS SECTION                                               */
+    /* ---------------------------------------------------------------------- */
+    .testimonials-section {
+      background: var(--background);
+      padding: 5rem 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .testimonials-section {
+        padding: 6rem 2.5rem;
+      }
+    }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      margin-top: 3.5rem;
+    }
+    @media (min-width: 768px) {
+      .testimonials-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    .testimonial-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      padding: 1.75rem;
+      transition: transform 0.3s var(--ease-out-expo);
+      will-change: transform;
+    }
+    @media (min-width: 769px) {
+      .testimonial-card:hover {
+        transform: translateY(-8px);
+      }
+    }
+    .quote-glyph {
+      font-size: 2.25rem;
+      color: var(--brand);
+      line-height: 1;
+      font-family: Georgia, serif;
+    }
+    .quote-text {
+      font-size: 1.125rem;
+      color: var(--ink);
+      line-height: 1.6;
+      margin-top: 1rem;
+    }
+    .quote-author {
+      border-top: 1px solid var(--hairline);
+      padding-top: 1rem;
+      margin-top: 1.5rem;
+    }
+    .author-name {
+      font-weight: 500;
+    }
+    .author-role {
+      font-size: 0.875rem;
+      color: var(--ink-soft);
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 7) FOOTER                                                             */
+    /* ---------------------------------------------------------------------- */
+    .site-footer {
+      background: var(--brand-deep);
+      color: #ffffff;
+      border-radius: var(--radius-card-lg);
+      margin-top: 0.75rem;
+      padding: 3.5rem 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .site-footer {
+        padding: 4rem 2.5rem;
+      }
+    }
+    .footer-cta-band {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 3.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .footer-cta-band {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+    }
+    .footer-cta-title {
+      font-size: 3.75rem;
+      font-weight: 500;
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      margin-top: 1rem;
+    }
+
+    .footer-cols-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+      padding: 3.5rem 0;
+    }
+    @media (min-width: 768px) {
+      .footer-cols-grid {
+        grid-template-columns: 1.4fr 1fr 1fr 1fr;
+      }
+    }
+    .footer-brand-col {
+      max-width: 20rem;
+    }
+    .footer-blurb {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.65);
+      margin-top: 1rem;
+      line-height: 1.6;
+    }
+    .footer-address {
+      font-style: normal;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .footer-address a:hover {
+      text-decoration: underline;
+    }
+    .footer-address-muted {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .footer-nav-col h4 {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 1.25rem;
+    }
+    .footer-nav-col ul {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .footer-nav-col a:hover {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
+    .footer-bottom-bar {
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      padding-top: 2rem;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    @media (min-width: 640px) {
+      .footer-bottom-bar {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+    .footer-links-group {
+      display: flex;
+      gap: 1.25rem;
+    }
+    .footer-links-group a:hover {
+      color: #ffffff;
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 8) CONTACT MODAL                                                      */
+    /* ---------------------------------------------------------------------- */
+    #contact-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0.75rem;
+      pointer-events: none;
+      visibility: hidden;
+      opacity: 0;
+    }
+    @media (min-width: 640px) {
+      #contact-modal {
+        align-items: center;
+        padding: 1.5rem;
+      }
+    }
+    #contact-modal.open {
+      pointer-events: auto;
+      visibility: visible;
+      opacity: 1;
+    }
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 47, 99, 0.4);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    #contact-modal.open .modal-backdrop {
+      opacity: 1;
+    }
+    .modal-panel {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-height: 92svh;
+      overflow-y: auto;
+      border-radius: var(--radius-card-lg);
+      background: var(--surface-card);
+      color: var(--ink);
+      padding: 1.5rem;
+      box-shadow: 0 25px 60px rgba(15, 47, 99, 0.35);
+      transform: translateY(28px) scale(0.96);
+      opacity: 0;
+      transition: transform 0.4s var(--ease-out-expo), opacity 0.3s ease;
+    }
+    @media (min-width: 640px) {
+      .modal-panel {
+        max-width: 32rem;
+        padding: 2rem;
+      }
+    }
+    #contact-modal.open .modal-panel {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .modal-close-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      color: var(--ink);
+      transition: background-color 0.2s ease;
+    }
+    .modal-close-btn:hover {
+      background: var(--hairline);
+    }
+    .modal-close-btn svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      transition: transform 0.25s var(--ease-out-expo);
+    }
+    @media (min-width: 769px) {
+      .modal-close-btn:hover svg {
+        transform: rotate(90deg);
+      }
+    }
+    .modal-title {
+      font-size: 2.25rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      margin-top: 0.75rem;
+    }
+    @media (min-width: 640px) {
+      .modal-title {
+        font-size: 3rem;
+      }
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1.75rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+    }
+    .form-input {
+      width: 100%;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--hairline);
+      background: var(--background);
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      font-family: inherit;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .form-input:focus {
+      border-color: var(--brand-light);
+      box-shadow: 0 0 0 2px rgba(87, 144, 230, 0.2);
+    }
+    .form-submit-btn {
+      border-radius: var(--radius-pill);
+      background: var(--ink);
+      color: #ffffff;
+      padding: 0.875rem 1.75rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 0.5rem;
+      transition: background-color 0.25s ease, opacity 0.2s ease;
+    }
+    .form-submit-btn:hover:not(:disabled) {
+      background: var(--brand-deep);
+    }
+    .form-submit-btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .modal-success-box {
+      margin-top: 2rem;
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      padding: 1.5rem;
+      text-align: center;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    .modal-success-box.show {
+      display: flex;
+    }
+    .success-check-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: var(--radius-pill);
+      background: var(--brand);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 9) FULLSCREEN MENU OVERLAY                                            */
+    /* ---------------------------------------------------------------------- */
+    #menu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: flex;
+      flex-direction: column;
+      pointer-events: none;
+      visibility: hidden;
+      opacity: 0;
+    }
+    #menu-overlay.open {
+      pointer-events: auto;
+      visibility: visible;
+      opacity: 1;
+    }
+    .menu-backdrop {
+      position: absolute;
+      inset: 0;
+      background: var(--brand-deep);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    #menu-overlay.open .menu-backdrop {
+      opacity: 1;
+    }
+    .menu-panel {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1.5rem;
+      color: #ffffff;
+      transform: translateY(-24px);
+      opacity: 0;
+      transition: transform 0.45s var(--ease-out-expo), opacity 0.35s ease;
+    }
+    @media (min-width: 640px) {
+      .menu-panel {
+        padding: 2.5rem;
+      }
+    }
+    #menu-overlay.open .menu-panel {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .menu-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .menu-close-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      transition: background-color 0.2s ease;
+    }
+    .menu-close-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .menu-close-btn svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      transition: transform 0.25s var(--ease-out-expo);
+    }
+    @media (min-width: 769px) {
+      .menu-close-btn:hover svg {
+        transform: rotate(90deg);
+      }
+    }
+    .menu-nav-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: auto 0;
+    }
+    .menu-nav-link {
+      font-size: 3rem;
+      font-weight: 500;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(28px);
+      transition: color 0.2s ease, transform 0.5s var(--ease-out-expo), opacity 0.4s ease;
+    }
+    @media (min-width: 640px) {
+      .menu-nav-link {
+        font-size: 4.5rem;
+      }
+    }
+    .menu-nav-link:hover {
+      color: var(--brand-light);
+    }
+    #menu-overlay.open .menu-nav-link {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .menu-bottom-row {
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      padding-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .menu-bottom-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+
+    /* Inview helper class */
+    .inview-block {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.8s var(--ease-out-expo);
+      will-change: opacity, transform;
+    }
+    .inview-block.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Screen reader only utility */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 0) INTRO LOADER CURTAIN -->
+  <aside id="loader-curtain" aria-hidden="false">
+    <div class="loader-wordmark" id="loader-wordmark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1.75rem; height:1.75rem;">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M4.8 5.6A9 9 0 0 0 4.8 18.4"/>
+        <path d="M19.2 5.6a9 9 0 0 1 0 12.8"/>
+      </svg>
+      <span>Baseline</span>
+    </div>
+    <div class="loader-progress-track">
+      <div class="loader-progress-fill" id="loader-fill"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN PAGE WRAPPER -->
+  <main>
+
+    <!-- 1) HERO SECTION -->
+    <section class="hero-section" id="hero">
+      <!-- Parallax on-court photo plate -->
+      <div class="hero-plate">
+        <div class="hero-plate-inner" id="hero-parallax-plate">
+          <img
+            src="https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/hero/hero-court.webp"
+            alt="Player lunging for a shot on a hard court"
+            fetchpriority="high"
+            loading="eager"
+          >
+          <div class="hero-gradient"></div>
+        </div>
+      </div>
+
+      <!-- Transparent Header -->
+      <header class="site-header">
+        <nav class="header-nav-left" aria-label="Main Navigation">
+          <a href="#programs">Programs &amp; Coaches</a>
+          <a href="#facilities">Club &amp; Events</a>
+        </nav>
+
+        <a href="#hero" class="header-brand" aria-label="Baseline Tennis Club">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1.25rem; height:1.25rem;">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M4.8 5.6A9 9 0 0 0 4.8 18.4"/>
+            <path d="M19.2 5.6a9 9 0 0 1 0 12.8"/>
+          </svg>
+          <span>Baseline</span>
+        </a>
+
+        <div class="header-right">
+          <button type="button" class="header-book-btn" id="open-modal-header">Book a Visit</button>
+          <button type="button" class="burger-btn" id="open-menu-btn" aria-label="Open Navigation Menu">
+            <span class="burger-lines">
+              <span class="burger-line"></span>
+              <span class="burger-line"></span>
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Giant Title -->
+      <div class="hero-title-wrap">
+        <h1 class="hero-title" id="hero-title">
+          <span class="clip-word"><span class="clip-inner">Own</span></span>
+          <span class="clip-word"><span class="clip-inner">The</span></span>
+          <span class="clip-word"><span class="clip-inner">Court</span></span>
+        </h1>
+      </div>
+
+      <!-- Hero Bottom Row -->
+      <div class="hero-bottom">
+        <p class="hero-tagline" id="hero-tagline">
+          <span class="clip-line"><span class="clip-inner">Show Up,</span></span><br>
+          <span class="clip-line"><span class="clip-inner">Level Up</span></span>
+        </p>
+
+        <div class="hero-right-cluster">
+          <!-- Collection Slider -->
+          <div class="collection-slider-wrap inview-block" id="hero-slider-wrap">
+            <div class="collection-card glass-card" id="collection-card">
+              <div class="collection-img-box">
+                <img id="col-img" src="https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/2.webp" alt="Player driving a backhand on a hard court" loading="lazy">
+              </div>
+              <div class="collection-info">
+                <span class="collection-brand" id="col-brand">Baseline Pro</span>
+                <span class="collection-name" id="col-title">Featured Gear</span>
+                <a href="#shop" class="collection-cta" id="col-cta">Shop the kit &rarr;</a>
+              </div>
+            </div>
+            <div class="carousel-dots light" id="hero-dots">
+              <button class="carousel-dot active" data-index="0" aria-label="Slide 1"><span class="carousel-dot-inner"></span></button>
+              <button class="carousel-dot" data-index="1" aria-label="Slide 2"><span class="carousel-dot-inner"></span></button>
+              <button class="carousel-dot" data-index="2" aria-label="Slide 3"><span class="carousel-dot-inner"></span></button>
+            </div>
+          </div>
+
+          <!-- Membership Card -->
+          <article class="membership-card glass-card inview-block" id="hero-membership-card">
+            <div class="membership-info">
+              <div class="membership-val">9K+</div>
+              <div class="avatar-stack">
+                <span class="avatar-dot" style="background:#5790e6;"></span>
+                <span class="avatar-dot" style="background:#c2e029;"></span>
+                <span class="avatar-dot" style="background:#0b6e97;"></span>
+                <span class="avatar-dot" style="background:#ffffff;"></span>
+              </div>
+              <span class="membership-caption">Members on court</span>
+            </div>
+            <div class="membership-img-box">
+              <img src="https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/1.webp" alt="Player waiting to return on a clay court" loading="lazy">
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) TRUST SECTION -->
+    <section class="trust-section" id="trust">
+      <div class="trust-badges-row">
+        <!-- 100% circle badge -->
+        <div class="percent-badge inview-block" id="trust-percent-badge">
+          <span class="percent-num">100%</span>
+          <span class="percent-sub">Coaching built around your game</span>
+        </div>
+
+        <!-- Badge card -->
+        <article class="trust-badge-card inview-block" id="trust-badge-card">
+          <div class="badge-index-chip">#01</div>
+          <h3>Trusted by serious players</h3>
+          <p>From first-timers to nationally ranked juniors, players train here because the progress shows up on the scoreboard.</p>
+        </article>
+      </div>
+
+      <!-- Center Coach Card (Tilted 6deg) -->
+      <div class="coach-card-anchor">
+        <figure class="coach-card inview-block" id="coach-card">
+          <img id="coach-img" src="https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/5.webp" alt="Head coach set in a ready stance on clay" loading="lazy">
+          <figcaption class="coach-glass-caption">
+            <span class="coach-name" id="coach-name">Marco Vidal</span>
+            <span class="coach-role" id="coach-role">Head Coach</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <!-- Oversized Ghost Heading -->
+      <div class="ghost-heading-wrap" id="ghost-heading" aria-hidden="true">
+        <div class="ghost-row">
+          <span class="clip-word-ghost"><span class="clip-inner ghost-word" id="gw-0">Expert</span></span>
+          <span class="clip-word-ghost"><span class="clip-inner ghost-word" id="gw-1">Result-</span></span>
+        </div>
+        <div class="ghost-row">
+          <span class="clip-word-ghost"><span class="clip-inner ghost-word highlight" id="gw-2">Driven</span></span>
+          <span class="clip-word-ghost"><span class="clip-inner ghost-word" id="gw-3">Coaching</span></span>
+        </div>
+      </div>
+
+      <!-- Carousel Controls -->
+      <div class="trust-controls-row">
+        <button type="button" class="arrow-btn outline prev" id="trust-prev" aria-label="Previous Coach">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </button>
+
+        <div class="carousel-dots dark" id="trust-dots">
+          <button class="carousel-dot active" data-index="0" aria-label="Coach 1"><span class="carousel-dot-inner"></span></button>
+          <button class="carousel-dot" data-index="1" aria-label="Coach 2"><span class="carousel-dot-inner"></span></button>
+          <button class="carousel-dot" data-index="2" aria-label="Coach 3"><span class="carousel-dot-inner"></span></button>
+        </div>
+
+        <button type="button" class="arrow-btn solid next" id="trust-next" aria-label="Next Coach">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- 3) PROGRAMS SECTION -->
+    <section class="programs-section" id="programs">
+      <div class="eyebrow dark">
+        <span class="eyebrow-dot"></span>
+        <span>Training programs</span>
+      </div>
+
+      <h2 class="section-title-stacked" id="programs-title">
+        <span class="clip-line"><span class="clip-inner">Built for</span></span><br>
+        <span class="clip-line"><span class="clip-inner">every level</span></span>
+      </h2>
+
+      <ul class="programs-list">
+        <li>
+          <a href="#junior" class="program-row inview-block" data-delay="0">
+            <span class="program-idx">01</span>
+            <div class="program-main">
+              <span class="program-name">Junior Development</span>
+              <span class="program-desc">Fundamentals, footwork, and match play for ages 6–14.</span>
+            </div>
+            <span class="program-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M13 6l6 6-6 6"/>
+              </svg>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="#performance" class="program-row inview-block" data-delay="90">
+            <span class="program-idx">02</span>
+            <div class="program-main">
+              <span class="program-name">Performance Squad</span>
+              <span class="program-desc">High-volume training for competitive and ranked players.</span>
+            </div>
+            <span class="program-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M13 6l6 6-6 6"/>
+              </svg>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="#adult" class="program-row inview-block" data-delay="180">
+            <span class="program-idx">03</span>
+            <div class="program-main">
+              <span class="program-name">Adult Clinics</span>
+              <span class="program-desc">Small-group sessions to sharpen technique and fitness.</span>
+            </div>
+            <span class="program-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M13 6l6 6-6 6"/>
+              </svg>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="#private" class="program-row inview-block" data-delay="270">
+            <span class="program-idx">04</span>
+            <div class="program-main">
+              <span class="program-name">Private Coaching</span>
+              <span class="program-desc">One-to-one sessions tailored to your goals and schedule.</span>
+            </div>
+            <span class="program-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M13 6l6 6-6 6"/>
+              </svg>
+            </span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 4) FACILITIES SECTION -->
+    <section class="facilities-section" id="facilities">
+      <div class="facilities-grid">
+        <div class="facilities-intro">
+          <img
+            class="facilities-icon-img inview-block"
+            src="https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/3.webp"
+            alt="Player stretching for a forehand on clay"
+            loading="lazy"
+          >
+          <h2 class="section-title-stacked" id="facilities-title" style="margin-top:1.5rem;">
+            <span class="clip-line"><span class="clip-inner">Tour Our</span></span><br>
+            <span class="clip-line"><span class="clip-inner">World-Class</span></span><br>
+            <span class="clip-line"><span class="clip-inner">Courts</span></span>
+          </h2>
+          <p class="facilities-body-words" id="facilities-body">
+            <!-- Word-by-word fade+rise injected by JS -->
+          </p>
+        </div>
+
+        <div class="facilities-tiles">
+          <figure class="court-card inview-block" data-delay="0">
+            <div class="court-card-inner">
+              <img src="https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/1.webp" alt="Player on the baseline of an outdoor clay court" loading="lazy">
+            </div>
+            <figcaption class="court-caption clay">
+              <span class="court-name">Redline Clay</span>
+              <span class="court-desc">A fast outdoor clay court tuned for long, physical rallies.</span>
+            </figcaption>
+          </figure>
+
+          <figure class="court-card staggered inview-block" data-delay="140">
+            <div class="court-card-inner">
+              <img src="https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/4.webp" alt="Player following through on a blue hard court" loading="lazy">
+            </div>
+            <figcaption class="court-caption blue">
+              <span class="court-name">Harbor Court</span>
+              <span class="court-desc">A sheltered hard court built for precision and night play.</span>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5) STATS SECTION -->
+    <section class="stats-section">
+      <div class="eyebrow light">
+        <span class="eyebrow-dot"></span>
+        <span>By the numbers</span>
+      </div>
+
+      <h2 class="section-title-stacked" id="stats-title">
+        <span class="clip-line"><span class="clip-inner">A club that</span></span><br>
+        <span class="clip-line"><span class="clip-inner">keeps score</span></span>
+      </h2>
+
+      <dl class="stats-grid">
+        <div class="stat-cell inview-block" data-delay="0">
+          <dt class="sr-only">Certified coaches</dt>
+          <dd class="stat-value">24</dd>
+          <dd class="stat-label">Certified coaches</dd>
+        </div>
+        <div class="stat-cell inview-block" data-delay="110">
+          <dt class="sr-only">Championship courts</dt>
+          <dd class="stat-value">12</dd>
+          <dd class="stat-label">Championship courts</dd>
+        </div>
+        <div class="stat-cell inview-block" data-delay="220">
+          <dt class="sr-only">Members training</dt>
+          <dd class="stat-value">9K+</dd>
+          <dd class="stat-label">Members training</dd>
+        </div>
+        <div class="stat-cell inview-block" data-delay="330">
+          <dt class="sr-only">Years on the baseline</dt>
+          <dd class="stat-value">15</dd>
+          <dd class="stat-label">Years on the baseline</dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- 6) TESTIMONIALS SECTION -->
+    <section class="testimonials-section" id="testimonials">
+      <div class="eyebrow dark">
+        <span class="eyebrow-dot"></span>
+        <span>What players say</span>
+      </div>
+
+      <h2 class="section-title-stacked" id="testimonials-title">
+        <span class="clip-line"><span class="clip-inner">Loved by</span></span><br>
+        <span class="clip-line"><span class="clip-inner">the locker room</span></span>
+      </h2>
+
+      <ul class="testimonials-grid">
+        <li>
+          <article class="testimonial-card inview-block" data-delay="0">
+            <div>
+              <span class="quote-glyph" aria-hidden="true">&ldquo;</span>
+              <blockquote class="quote-text">
+                I added a level to my serve in one season. The coaching is detailed and it actually sticks.
+              </blockquote>
+            </div>
+            <figcaption class="quote-author">
+              <div class="author-name">Priya Anand</div>
+              <div class="author-role">Performance Squad</div>
+            </figcaption>
+          </article>
+        </li>
+        <li>
+          <article class="testimonial-card inview-block" data-delay="120">
+            <div>
+              <span class="quote-glyph" aria-hidden="true">&ldquo;</span>
+              <blockquote class="quote-text">
+                Best courts in the city and a team that treats every member like a competitor.
+              </blockquote>
+            </div>
+            <figcaption class="quote-author">
+              <div class="author-name">Lukas Brenner</div>
+              <div class="author-role">Adult Clinics</div>
+            </figcaption>
+          </article>
+        </li>
+        <li>
+          <article class="testimonial-card inview-block" data-delay="240">
+            <div>
+              <span class="quote-glyph" aria-hidden="true">&ldquo;</span>
+              <blockquote class="quote-text">
+                My daughter went from shy beginner to club champion. Worth every minute.
+              </blockquote>
+            </div>
+            <figcaption class="quote-author">
+              <div class="author-name">Dana Okafor</div>
+              <div class="author-role">Parent, Junior Development</div>
+            </figcaption>
+          </article>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 7) FOOTER -->
+    <footer class="site-footer" id="contact">
+      <!-- CTA band -->
+      <div class="footer-cta-band">
+        <div>
+          <div class="eyebrow light">
+            <span class="eyebrow-dot"></span>
+            <span>Get started</span>
+          </div>
+          <p class="footer-cta-title">
+            <span class="clip-line"><span class="clip-inner">Ready to</span></span><br>
+            <span class="clip-line"><span class="clip-inner">play?</span></span>
+          </p>
+        </div>
+
+        <button type="button" class="pill-btn light inview-block" id="footer-book-btn" data-delay="150">
+          <span>Book a Visit</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Columns Grid -->
+      <div class="footer-cols-grid">
+        <div class="footer-brand-col">
+          <div class="header-brand" style="justify-content: flex-start;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1.25rem; height:1.25rem;">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M4.8 5.6A9 9 0 0 0 4.8 18.4"/>
+              <path d="M19.2 5.6a9 9 0 0 1 0 12.8"/>
+            </svg>
+            <span>Baseline</span>
+          </div>
+          <p class="footer-blurb">
+            A members' tennis club and academy where focused coaching meets championship courts.
+          </p>
+          <address class="footer-address">
+            <a href="mailto:play@baseline.club">play@baseline.club</a>
+            <a href="tel:+12125550148">+1 (212) 555-0148</a>
+            <span class="footer-address-muted">120 Court Lane, New York</span>
+          </address>
+        </div>
+
+        <nav class="footer-nav-col" aria-label="Programs">
+          <h4>Programs</h4>
+          <ul>
+            <li><a href="#junior">Junior Development</a></li>
+            <li><a href="#performance">Performance Squad</a></li>
+            <li><a href="#adult">Adult Clinics</a></li>
+            <li><a href="#private">Private Coaching</a></li>
+          </ul>
+        </nav>
+
+        <nav class="footer-nav-col" aria-label="Club">
+          <h4>Club</h4>
+          <ul>
+            <li><a href="#membership">Membership</a></li>
+            <li><a href="#facilities">Facilities</a></li>
+            <li><a href="#club">Events</a></li>
+            <li><a href="#shop">Pro Shop</a></li>
+          </ul>
+        </nav>
+
+        <nav class="footer-nav-col" aria-label="Company">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#programs">Coaches</a></li>
+            <li><a href="#careers">Careers</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="footer-bottom-bar">
+        <span>&copy; 2026 Baseline Tennis Club. All rights reserved.</span>
+        <div class="footer-links-group" aria-label="Social Links">
+          <a href="#instagram">Instagram</a>
+          <a href="#x">X</a>
+          <a href="#youtube">YouTube</a>
+          <a href="#linkedin">LinkedIn</a>
+        </div>
+        <div class="footer-links-group" aria-label="Legal Links">
+          <a href="#privacy">Privacy</a>
+          <a href="#terms">Terms</a>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- 8) CONTACT MODAL (PORTALED) -->
+  <div id="contact-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <div class="eyebrow dark">
+            <span class="eyebrow-dot"></span>
+            <span>Book a visit</span>
+          </div>
+          <h2 class="modal-title" id="modal-title">
+            Come see<br>the courts
+          </h2>
+        </div>
+        <button type="button" class="modal-close-btn" id="modal-close-btn" aria-label="Close Contact Dialog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form class="modal-form" id="contact-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="full-name">Full name</label>
+          <input type="text" id="full-name" class="form-input" placeholder="Alex Rivera" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email-address">Email</label>
+          <input type="email" id="email-address" class="form-input" placeholder="you@email.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="message">What would you like to play?</label>
+          <textarea id="message" rows="3" class="form-input" placeholder="I'd love to try a private lesson on the clay courts&hellip;"></textarea>
+        </div>
+        <button type="submit" class="form-submit-btn" id="submit-btn">Request a visit</button>
+      </form>
+
+      <div class="modal-success-box" id="modal-success">
+        <div class="success-check-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:1.5rem; height:1.5rem;">
+            <path d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h3 style="font-size:1.125rem; font-weight:500;">Request received</h3>
+        <p style="font-size:0.875rem; color:var(--ink-soft); line-height:1.5;" id="success-subtext">
+          Thanks, there &mdash; our team will be in touch to lock in your visit.
+        </p>
+        <button type="button" class="pill-btn solid" id="modal-done-btn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9) FULLSCREEN MENU OVERLAY (PORTALED) -->
+  <div id="menu-overlay" role="dialog" aria-modal="true" aria-label="Navigation Menu" aria-hidden="true">
+    <div class="menu-backdrop" id="menu-backdrop"></div>
+    <div class="menu-panel">
+      <div class="menu-top-row">
+        <div class="header-brand">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1.25rem; height:1.25rem;">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M4.8 5.6A9 9 0 0 0 4.8 18.4"/>
+            <path d="M19.2 5.6a9 9 0 0 1 0 12.8"/>
+          </svg>
+          <span>Baseline</span>
+        </div>
+        <button type="button" class="menu-close-btn" id="menu-close-btn" aria-label="Close Navigation Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="menu-nav-links" aria-label="Mobile Navigation Links">
+        <a href="#programs" class="menu-nav-link" style="transition-delay: 120ms;">Programs</a>
+        <a href="#facilities" class="menu-nav-link" style="transition-delay: 190ms;">Facilities</a>
+        <a href="#testimonials" class="menu-nav-link" style="transition-delay: 260ms;">Reviews</a>
+        <a href="#contact" class="menu-nav-link" style="transition-delay: 330ms;">Contact</a>
+      </nav>
+
+      <div class="menu-bottom-row">
+        <button type="button" class="pill-btn light" id="menu-book-btn">
+          <span>Book a Visit</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </button>
+
+        <div class="footer-links-group" style="color: rgba(255,255,255,0.7);">
+          <a href="#instagram">Instagram</a>
+          <a href="#x">X</a>
+          <a href="#youtube">YouTube</a>
+          <a href="#linkedin">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script type="module">
+    import Lenis from 'lenis';
+
+    // -------------------------------------------------------------------------
+    // A) ADAPTIVE REM GRID SCALING (> 1920px)
+    // -------------------------------------------------------------------------
+    function updateAdaptiveRem() {
+      const FONT_BASE = 16, BASE_W = 1920, COEF = 0.6666;
+      const reduction = ((BASE_W - window.innerWidth) / BASE_W) * 100 * COEF;
+      const size = FONT_BASE - (FONT_BASE * reduction) / 100;
+      if (size > FONT_BASE) {
+        document.documentElement.style.fontSize = size + 'px';
+      } else {
+        document.documentElement.style.removeProperty('font-size');
+      }
+    }
+    window.addEventListener('resize', updateAdaptiveRem);
+    updateAdaptiveRem();
+
+    // -------------------------------------------------------------------------
+    // B) LENIS SMOOTH SCROLL & SCROLL LOCK
+    // -------------------------------------------------------------------------
+    window.scrollTo(0, 0);
+
+    const lenis = new Lenis({
+      smoothWheel: true,
+      duration: 1.2
+    });
+
+    let isScrollLocked = false;
+    function lockScroll() {
+      isScrollLocked = true;
+      lenis.stop();
+      document.documentElement.style.position = 'relative';
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.height = '100%';
+    }
+    function unlockScroll() {
+      isScrollLocked = false;
+      lenis.start();
+      document.documentElement.style.removeProperty('position');
+      document.documentElement.style.removeProperty('overflow');
+      document.documentElement.style.removeProperty('height');
+    }
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // Initial scroll lock for the loader
+    lockScroll();
+
+    // -------------------------------------------------------------------------
+    // C) PARALLAX ENGINE (Hero & Ghost Words)
+    // -------------------------------------------------------------------------
+    const heroPlate = document.getElementById('hero-parallax-plate');
+    const heroSection = document.getElementById('hero');
+    const trustSection = document.getElementById('trust');
+    const gw0 = document.getElementById('gw-0');
+    const gw1 = document.getElementById('gw-1');
+    const gw2 = document.getElementById('gw-2');
+    const gw3 = document.getElementById('gw-3');
+
+    lenis.on('scroll', () => {
+      if (isScrollLocked) return;
+
+      // 1. Hero Parallax (translateY 0% -> 12%)
+      if (heroSection && heroPlate) {
+        const rect = heroSection.getBoundingClientRect();
+        const winH = window.innerHeight;
+        if (rect.bottom > 0 && rect.top < winH) {
+          const progress = Math.min(Math.max(-rect.top / rect.height, 0), 1);
+          const yShift = progress * 12;
+          heroPlate.style.transform = `translateY(${yShift}%)`;
+        }
+      }
+
+      // 2. Trust Ghost Words X Parallax
+      if (trustSection && gw0 && gw1 && gw2 && gw3) {
+        const rect = trustSection.getBoundingClientRect();
+        const winH = window.innerHeight;
+        if (rect.bottom > 0 && rect.top < winH) {
+          const progress = (winH - rect.top) / (winH + rect.height);
+          const pClamped = Math.min(Math.max(progress, 0), 1);
+          // top-left: -3% -> 3%
+          const x0 = -3 + pClamped * 6;
+          // top-right: 3% -> -3%
+          const x1 = 3 - pClamped * 6;
+          // bottom-left: -2% -> 4%
+          const x2 = -2 + pClamped * 6;
+          // bottom-right: 4% -> -3%
+          const x3 = 4 - pClamped * 7;
+
+          gw0.style.transform = `translateX(${x0}%)`;
+          gw1.style.transform = `translateX(${x1}%)`;
+          gw2.style.transform = `translateX(${x2}%)`;
+          gw3.style.transform = `translateX(${x3}%)`;
+        }
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // D) FACILITIES BODY WORDS INJECTION (Word-by-word fade+rise)
+    // -------------------------------------------------------------------------
+    const facilitiesBody = document.getElementById('facilities-body');
+    const facilitiesText = "Reserve a court for focused practice, squad drills, or private sessions — and train in the same conditions you'll compete in.";
+    if (facilitiesBody) {
+      const words = facilitiesText.split(' ');
+      facilitiesBody.innerHTML = words.map((w, i) => {
+        const delay = 250 + i * 28;
+        return `<span class="clip-word"><span class="clip-inner" style="transition-delay:${delay}ms; transition-duration:0.7s; transition-timing-function:var(--ease-out-quart);">${w}&nbsp;</span></span>`;
+      }).join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // E) INVIEW REVEALS OBSERVER
+    // -------------------------------------------------------------------------
+    const inviewObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const target = entry.target;
+          const delay = target.dataset.delay || 0;
+          setTimeout(() => {
+            target.classList.add('in');
+            target.classList.add('revealed');
+
+            // Trigger child clip-inners if any
+            const clipInners = target.querySelectorAll('.clip-inner');
+            clipInners.forEach((el, idx) => {
+              el.style.transform = 'translateY(0)';
+              el.style.opacity = '1';
+            });
+          }, Number(delay));
+          observer.unobserve(target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    // Observe all inview elements
+    document.querySelectorAll('.inview-block').forEach(el => inviewObserver.observe(el));
+
+    // Also observe stacked-lines headers
+    const titleHeaders = [
+      { id: 'programs-title', stagger: 120, delay: 0 },
+      { id: 'facilities-title', stagger: 120, delay: 0 },
+      { id: 'stats-title', stagger: 120, delay: 0 },
+      { id: 'testimonials-title', stagger: 120, delay: 0 },
+      { id: 'facilities-body', stagger: 28, delay: 250 }
+    ];
+
+    titleHeaders.forEach(cfg => {
+      const el = document.getElementById(cfg.id);
+      if (el) {
+        const obs = new IntersectionObserver(([entry], o) => {
+          if (entry.isIntersecting) {
+            const inners = el.querySelectorAll('.clip-inner');
+            inners.forEach((inner, idx) => {
+              const d = cfg.delay + idx * cfg.stagger;
+              setTimeout(() => {
+                inner.style.transform = 'translateY(0)';
+                inner.style.opacity = '1';
+              }, d);
+            });
+            o.unobserve(el);
+          }
+        }, { threshold: 0.2 });
+        obs.observe(el);
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // F) INTRO LOADER SEQUENCE
+    // -------------------------------------------------------------------------
+    const loaderCurtain = document.getElementById('loader-curtain');
+    const loaderWordmark = document.getElementById('loader-wordmark');
+    const loaderFill = document.getElementById('loader-fill');
+
+    const MIN_VISIBLE_MS = 1400;
+    const MAX_VISIBLE_MS = 2600;
+    const EXIT_MS = 850;
+
+    let isReady = false;
+
+    function triggerHeroReveal() {
+      // 1. Hero Title Word Stagger: 140ms per word, duration 1100ms, easeOutExpo
+      const heroTitle = document.getElementById('hero-title');
+      if (heroTitle) {
+        const words = heroTitle.querySelectorAll('.clip-inner');
+        words.forEach((w, i) => {
+          setTimeout(() => {
+            w.style.transform = 'translateY(0)';
+            w.style.opacity = '1';
+          }, i * 140);
+        });
+      }
+
+      // 2. Hero Tagline: baseDelay 350ms, stagger 110ms, duration 900ms, easeOutExpo
+      const heroTagline = document.getElementById('hero-tagline');
+      if (heroTagline) {
+        const lines = heroTagline.querySelectorAll('.clip-inner');
+        lines.forEach((line, i) => {
+          setTimeout(() => {
+            line.style.transform = 'translateY(0)';
+            line.style.opacity = '1';
+          }, 350 + i * 110);
+        });
+      }
+
+      // 3. Collection Slider & Membership Inview
+      const sliderWrap = document.getElementById('hero-slider-wrap');
+      if (sliderWrap) {
+        setTimeout(() => {
+          sliderWrap.classList.add('in');
+        }, 650);
+      }
+
+      const membershipCard = document.getElementById('hero-membership-card');
+      if (membershipCard) {
+        setTimeout(() => {
+          membershipCard.classList.add('in');
+        }, 780);
+      }
+    }
+
+    function completeLoader() {
+      if (isReady) return;
+      isReady = true;
+
+      // Start hero text animations
+      triggerHeroReveal();
+
+      // Unlock Lenis scroll
+      unlockScroll();
+
+      // Slide curtain up
+      if (loaderCurtain) {
+        loaderCurtain.style.transform = 'translateY(-105%)';
+        setTimeout(() => {
+          loaderCurtain.remove();
+        }, EXIT_MS);
+      }
+    }
+
+    // Start loader wordmark & progress fill
+    setTimeout(() => {
+      if (loaderWordmark) loaderWordmark.classList.add('in');
+    }, 50);
+
+    setTimeout(() => {
+      if (loaderFill) loaderFill.style.transform = 'scaleX(1)';
+    }, 120);
+
+    // Countdown logic
+    const startTime = performance.now();
+    function checkReady() {
+      const elapsed = performance.now() - startTime;
+      const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
+      setTimeout(completeLoader, remaining);
+    }
+
+    if (document.readyState === 'complete') {
+      checkReady();
+    } else {
+      window.addEventListener('load', checkReady);
+      setTimeout(completeLoader, MAX_VISIBLE_MS);
+    }
+
+    // Respect prefers-reduced-motion
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setTimeout(completeLoader, 200);
+    }
+
+    // -------------------------------------------------------------------------
+    // G) HERO COLLECTION SLIDER (Autoplay 3800ms)
+    // -------------------------------------------------------------------------
+    const collectionData = [
+      {
+        img: 'https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/2.webp',
+        brand: 'Baseline Pro',
+        title: 'Featured Gear',
+        cta: 'Shop the kit',
+        alt: 'Player driving a backhand on a hard court'
+      },
+      {
+        img: 'https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/3.webp',
+        brand: 'Court Series',
+        title: 'Summer Drop',
+        cta: 'View the line',
+        alt: 'Player stretching for a forehand on clay'
+      },
+      {
+        img: 'https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/5.webp',
+        brand: 'Academy Kit',
+        title: 'Junior Range',
+        cta: 'Browse juniors',
+        alt: 'Player set in a ready stance on clay'
+      }
+    ];
+
+    let currentColIdx = 0;
+    const colCard = document.getElementById('collection-card');
+    const colImg = document.getElementById('col-img');
+    const colBrand = document.getElementById('col-brand');
+    const colTitle = document.getElementById('col-title');
+    const colCta = document.getElementById('col-cta');
+    const heroDots = document.querySelectorAll('#hero-dots .carousel-dot');
+
+    function setCollectionSlide(idx) {
+      currentColIdx = (idx + collectionData.length) % collectionData.length;
+      const data = collectionData[currentColIdx];
+
+      if (colCard) {
+        colCard.style.opacity = '0';
+        colCard.style.transform = 'translateY(16px) scale(0.96)';
+        colCard.style.transition = 'opacity 0.25s ease, transform 0.35s var(--ease-out-expo)';
+
+        setTimeout(() => {
+          if (colImg) { colImg.src = data.img; colImg.alt = data.alt; }
+          if (colBrand) colBrand.textContent = data.brand;
+          if (colTitle) colTitle.textContent = data.title;
+          if (colCta) colCta.innerHTML = `${data.cta} &rarr;`;
+
+          colCard.style.opacity = '1';
+          colCard.style.transform = 'translateY(0) scale(1)';
+        }, 120);
+      }
+
+      heroDots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentColIdx);
+      });
+    }
+
+    heroDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        const idx = Number(dot.dataset.index);
+        setCollectionSlide(idx);
+      });
+    });
+
+    // Autoplay interval 3800ms
+    setInterval(() => {
+      if (!isReady) return;
+      setCollectionSlide(currentColIdx + 1);
+    }, 3800);
+
+    // -------------------------------------------------------------------------
+    // H) TRUST COACH CAROUSEL & GHOST WORDS RE-REVEAL
+    // -------------------------------------------------------------------------
+    const coachData = [
+      {
+        name: 'Marco Vidal',
+        role: 'Head Coach',
+        img: 'https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/5.webp',
+        alt: 'Head coach set in a ready stance on clay',
+        words: ['Expert', 'Result-', 'Driven', 'Coaching']
+      },
+      {
+        name: 'Elena Sokolova',
+        role: 'Performance Coach',
+        img: 'https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/4.webp',
+        alt: 'Performance coach following through on a serve',
+        words: ['Sharper', 'Faster', 'Stronger', 'Player']
+      },
+      {
+        name: 'James Okoro',
+        role: 'Juniors Lead',
+        img: 'https://api.getlayers.ai/storage/v1/object/public/public/assets/baseline-88535e4000/1.webp',
+        alt: 'Juniors lead waiting to return on clay',
+        words: ['Future', 'Champions', 'Start', 'Here']
+      }
+    ];
+
+    let currentCoachIdx = 0;
+    const coachImg = document.getElementById('coach-img');
+    const coachName = document.getElementById('coach-name');
+    const coachRole = document.getElementById('coach-role');
+    const trustDots = document.querySelectorAll('#trust-dots .carousel-dot');
+    const ghostWords = [
+      document.getElementById('gw-0'),
+      document.getElementById('gw-1'),
+      document.getElementById('gw-2'),
+      document.getElementById('gw-3')
+    ];
+
+    function setCoachSlide(idx) {
+      currentCoachIdx = (idx + coachData.length) % coachData.length;
+      const data = coachData[currentCoachIdx];
+
+      // 1. Cross-fade photo
+      if (coachImg) {
+        coachImg.style.opacity = '0';
+        setTimeout(() => {
+          coachImg.src = data.img;
+          coachImg.alt = data.alt;
+          if (coachName) coachName.textContent = data.name;
+          if (coachRole) coachRole.textContent = data.role;
+          coachImg.style.opacity = '1';
+        }, 150);
+      }
+
+      // 2. Re-fire ghost words clip reveal (duration 700ms easeOutExpo)
+      ghostWords.forEach((gw, i) => {
+        if (!gw) return;
+        gw.style.transform = 'translateY(115%)';
+        gw.style.opacity = '0';
+        gw.textContent = data.words[i];
+
+        setTimeout(() => {
+          gw.style.transition = 'transform 0.7s var(--ease-out-expo), opacity 0.5s ease';
+          gw.style.transform = 'translateY(0)';
+          gw.style.opacity = '1';
+        }, 80 + i * 70);
+      });
+
+      // 3. Update dots
+      trustDots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentCoachIdx);
+      });
+    }
+
+    document.getElementById('trust-prev')?.addEventListener('click', () => setCoachSlide(currentCoachIdx - 1));
+    document.getElementById('trust-next')?.addEventListener('click', () => setCoachSlide(currentCoachIdx + 1));
+
+    trustDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        const idx = Number(dot.dataset.index);
+        setCoachSlide(idx);
+      });
+    });
+
+    // Initial ghost word reveal on scroll into view
+    const trustSectionObserver = new IntersectionObserver(([entry], o) => {
+      if (entry.isIntersecting) {
+        setCoachSlide(0);
+        o.unobserve(entry.target);
+      }
+    }, { threshold: 0.15 });
+    if (trustSection) trustSectionObserver.observe(trustSection);
+
+    // -------------------------------------------------------------------------
+    // I) CONTACT MODAL
+    // -------------------------------------------------------------------------
+    const contactModal = document.getElementById('contact-modal');
+    const contactForm = document.getElementById('contact-form');
+    const modalSuccess = document.getElementById('modal-success');
+    const successSubtext = document.getElementById('success-subtext');
+    const fullNameInput = document.getElementById('full-name');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function openModal() {
+      if (!contactModal) return;
+      contactModal.classList.add('open');
+      contactModal.setAttribute('aria-hidden', 'false');
+      lockScroll();
+
+      // Focus name field after ~120ms
+      setTimeout(() => {
+        if (fullNameInput) fullNameInput.focus();
+      }, 120);
+    }
+
+    function closeModal() {
+      if (!contactModal) return;
+      contactModal.classList.remove('open');
+      contactModal.setAttribute('aria-hidden', 'true');
+      unlockScroll();
+
+      // Reset form after ~350ms
+      setTimeout(() => {
+        if (contactForm) {
+          contactForm.reset();
+          contactForm.style.display = 'flex';
+        }
+        if (modalSuccess) {
+          modalSuccess.classList.remove('show');
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Request a visit';
+        }
+      }, 350);
+    }
+
+    // Modal triggers
+    document.getElementById('open-modal-header')?.addEventListener('click', openModal);
+    document.getElementById('footer-book-btn')?.addEventListener('click', openModal);
+    document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
+    document.getElementById('modal-backdrop')?.addEventListener('click', closeModal);
+    document.getElementById('modal-done-btn')?.addEventListener('click', closeModal);
+
+    // Modal form submit stub
+    if (contactForm) {
+      contactForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nameVal = fullNameInput?.value.trim() || '';
+        const firstName = nameVal.split(' ')[0] || 'there';
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Sending…';
+        }
+
+        setTimeout(() => {
+          if (contactForm) contactForm.style.display = 'none';
+          if (modalSuccess) modalSuccess.classList.add('show');
+          if (successSubtext) {
+            successSubtext.textContent = `Thanks, ${firstName} — our team will be in touch to lock in your visit.`;
+          }
+        }, 600);
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // J) FULLSCREEN MENU OVERLAY
+    // -------------------------------------------------------------------------
+    const menuOverlay = document.getElementById('menu-overlay');
+    const openMenuBtn = document.getElementById('open-menu-btn');
+    const closeMenuBtn = document.getElementById('menu-close-btn');
+    const menuBackdrop = document.getElementById('menu-backdrop');
+    const menuBookBtn = document.getElementById('menu-book-btn');
+    const menuLinks = document.querySelectorAll('.menu-nav-link');
+
+    function openMenu() {
+      if (!menuOverlay) return;
+      menuOverlay.classList.add('open');
+      menuOverlay.setAttribute('aria-hidden', 'false');
+      lockScroll();
+    }
+
+    function closeMenu() {
+      if (!menuOverlay) return;
+      menuOverlay.classList.remove('open');
+      menuOverlay.setAttribute('aria-hidden', 'true');
+      unlockScroll();
+    }
+
+    openMenuBtn?.addEventListener('click', openMenu);
+    closeMenuBtn?.addEventListener('click', closeMenu);
+    menuBackdrop?.addEventListener('click', closeMenu);
+
+    menuLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        const targetId = link.getAttribute('href');
+        closeMenu();
+        if (targetId && targetId.startsWith('#')) {
+          e.preventDefault();
+          const targetEl = document.querySelector(targetId);
+          if (targetEl) {
+            setTimeout(() => {
+              lenis.scrollTo(targetEl, { offset: -20, duration: 1.2 });
+            }, 300);
+          }
+        }
+      });
+    });
+
+    menuBookBtn?.addEventListener('click', () => {
+      closeMenu();
+      setTimeout(openModal, 250);
+    });
+
+    // -------------------------------------------------------------------------
+    // K) GLOBAL KEYBOARD ACCESSIBILITY (ESC to close)
+    // -------------------------------------------------------------------------
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (contactModal && contactModal.classList.contains('open')) {
+          closeModal();
+        } else if (menuOverlay && menuOverlay.classList.contains('open')) {
+          closeMenu();
+        }
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // L) SMOOTH ANCHOR SCROLL VIA LENIS
+    // -------------------------------------------------------------------------
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', (e) => {
+        const targetId = anchor.getAttribute('href');
+        if (targetId && targetId !== '#' && targetId.length > 1) {
+          const targetEl = document.querySelector(targetId);
+          if (targetEl) {
+            e.preventDefault();
+            lenis.scrollTo(targetEl, { offset: -20, duration: 1.2 });
+          }
+        }
+      });
+    });
+
+  </script>
+</body>
+</html>
