@@ -51,5 +51,18 @@ export const healthSchema = z.object({
     .optional(),
 });
 
-export type HealthResponse = z.infer<typeof healthSchema>;
+export const purchaseProposalSchema = z.object({
+  template: z.enum(['saas', 'cloud_gpu']),
+  merchantName: z.string().min(1).max(100),
+  requestedAmountMinor: z.number().int().nonnegative(),
+  billingPreference: z.enum(['monthly', 'annual']),
+  rationale: z.string().min(1).max(1000),
+  extractedVendorTerms: z.object({
+    monthlyPriceMinor: z.number().int().nonnegative(),
+    annualPriceMinor: z.number().int().nonnegative(),
+  }),
+});
+
+export type PurchaseProposal = z.infer<typeof purchaseProposalSchema>;
+
 

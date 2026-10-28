@@ -12,6 +12,7 @@ const envSchema = z.object({
   AIRWALLEX_WEBHOOK_SECRET: z.string().optional(),
   LLM_PROVIDER: z.string().default('scripted'),
   LLM_MODEL: z.string().optional(),
+  LLM_API_KEY: z.string().optional(),
   INTENT_HMAC_SECRET: z.string().min(8).default('dev-only-intentlock-secret'),
   MONGODB_URI: z.string().optional(),
 });

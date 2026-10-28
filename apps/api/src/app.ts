@@ -95,9 +95,14 @@ app.get('/api/overview', (_req, res) => {
 });
 
 app.post('/api/intents', async (req, res) => {
-  const input = z.object({ userRequest: z.string().trim().min(5).max(2000) }).safeParse(req.body);
+  const input = z
+    .object({
+      userRequest: z.string().trim().min(5).max(2000),
+      untrustedContext: z.string().max(10000).optional(),
+    })
+    .safeParse(req.body);
   if (!input.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'userRequest must be between 5 and 2000 characters' } });
-  const record = await createIntent(input.data.userRequest);
+  const record = await createIntent(input.data.userRequest, input.data.untrustedContext);
   return res.status(201).json(record);
 });
 

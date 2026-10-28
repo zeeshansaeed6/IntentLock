@@ -2,10 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { signContract, type ContractDraft } from '../domain/contract.js';
 import { decideTreasury } from '../domain/treasury/engine.js';
 import { cardLimitMinor, evaluatePolicy } from '../domain/policy/engine.js';
+import { getTemplateConfig } from '../domain/templates/index.js';
 import { env } from '../config/env.js';
 import { store, type IntentRecord, type CardRecord } from '../store/memory.js';
 import { eventBus, type AgentEvent } from './events.js';
 import { getGateway } from '../integrations/airwallex/gateway.js';
+import { getLLMClient } from './llm/index.js';
 
 const weeks = Array.from({ length: 12 }, () => ({ inflowMinor: 0, outflowMinor: 60000 }));
 const projectionInput = { currentBalanceMinor: 2100000, reserveFloorMinor: 1200000, terms: { monthlyPriceMinor: 30000, annualPriceMinor: 500000 }, weeks };
@@ -14,19 +16,6 @@ export function emit(type: string, title: string, detail: string, tone: AgentEve
   const event = { id: randomUUID(), type, title, detail, tone, timestamp: new Date().toISOString(), data };
   eventBus.publish(event);
   store.addAudit({ type, message: `${title}: ${detail}`, tone, metadata: data ? Object.fromEntries(Object.entries(data).filter(([, value]) => typeof value === 'string') as [string, string][]) : undefined });
-}
-
-function scriptedInterpret(userRequest: string) {
-  const redTeam = /ignore previous|raise the limit|pay annually|5000/i.test(userRequest);
-  return {
-    template: /gpu|compute|cloud/i.test(userRequest) ? 'cloud_gpu' as const : 'saas' as const,
-    merchantName: /design|pixel/i.test(userRequest) ? 'PixelForge' : 'Northstar Design',
-    allowedMcc: /gpu|compute|cloud/i.test(userRequest) ? ['7379'] : ['5734'],
-    amountMinor: redTeam ? 500000 : 50000,
-    maxPerTransactionMinor: redTeam ? 500000 : 50000,
-    maxTotalMinor: redTeam ? 500000 : 50000,
-    rationale: redTeam ? 'External invoice text attempted to override the purchase boundary.' : 'Monthly pricing preserves cash runway while keeping cancellation optional.',
-  };
 }
 
 export async function issueCard(record: IntentRecord): Promise<CardRecord> {
@@ -60,44 +49,64 @@ export async function issueCard(record: IntentRecord): Promise<CardRecord> {
   return card;
 }
 
-export async function createIntent(userRequest: string): Promise<IntentRecord> {
+export async function createIntent(userRequest: string, untrustedContext?: string): Promise<IntentRecord> {
   emit('interpret', 'Intent interpreted', 'Mapped natural language into a typed purchase request.', 'violet');
-  const proposal = scriptedInterpret(userRequest);
-  const treasury = decideTreasury(projectionInput);
-  emit('plan', 'Treasury projection complete', `Monthly is safe; annual crosses the reserve floor in week ${treasury.annual.breachWeek}.`, 'violet', { recommendation: treasury.recommendation });
+  const llm = getLLMClient();
+  const proposal = await llm.generateProposal(userRequest, untrustedContext);
+  const templateConfig = getTemplateConfig(proposal.template);
+
+  const treasury = decideTreasury({
+    ...projectionInput,
+    terms: proposal.extractedVendorTerms,
+  });
+  emit('plan', 'Treasury projection complete', `${treasury.recommendation === 'monthly' ? 'Monthly' : treasury.recommendation === 'annual' ? 'Annual' : 'Defer'} recommendation · ${treasury.reasons[0]}`, 'violet', { recommendation: treasury.recommendation });
+
   const now = new Date();
+  const expiresAt = new Date(now.getTime() + templateConfig.validityDays * 24 * 60 * 60 * 1000);
+
+  const perTransactionCap = Math.min(proposal.requestedAmountMinor, templateConfig.maxPerTransactionCapMinor);
+  const totalCap = Math.min(proposal.requestedAmountMinor, templateConfig.maxTotalCapMinor);
+
   const policy = evaluatePolicy({
     template: proposal.template,
     merchantName: proposal.merchantName,
-    amountMinor: proposal.amountMinor,
-    maxPerTransactionMinor: proposal.maxPerTransactionMinor,
-    maxTotalMinor: proposal.maxTotalMinor,
-    allowedMcc: proposal.allowedMcc,
+    amountMinor: proposal.requestedAmountMinor,
+    maxPerTransactionMinor: perTransactionCap,
+    maxTotalMinor: totalCap,
+    allowedMcc: templateConfig.allowedMcc,
     currency: 'USD',
-    expiresAt: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
+    expiresAt,
     now,
     reserveFloorMinor: 1200000,
     deptBudgetRemainingMinor: 250000,
     approvalThresholdMinor: 100000,
   });
+
   const state = policy.ok ? (policy.requiresApproval ? 'PENDING_APPROVAL' : 'ACTIVE') : 'DRAFT';
+  const allowedMerchantNames = Array.from(new Set([proposal.merchantName, ...templateConfig.allowedMerchants]));
+
   const draft: ContractDraft = {
     template: proposal.template,
     user_request: userRequest,
-    decision: policy.ok ? 'monthly' : 'defer',
-    reconsider_on: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    merchant: { name: proposal.merchantName, allowed_names: [proposal.merchantName] },
-    allowed_mcc: proposal.allowedMcc,
-    currency: 'USD', allowed_currencies: ['USD'],
-    max_per_transaction_minor: policy.ok ? proposal.maxPerTransactionMinor : 0,
-    max_total_minor: policy.ok ? cardLimitMinor(proposal.maxTotalMinor, 250000) : 0,
-    max_transactions: 1, valid_from: now.toISOString(), expires_at: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    decision: policy.ok ? treasury.recommendation : 'defer',
+    reconsider_on: new Date(now.getTime() + templateConfig.validityDays * 24 * 60 * 60 * 1000).toISOString(),
+    merchant: { name: proposal.merchantName, allowed_names: allowedMerchantNames },
+    allowed_mcc: templateConfig.allowedMcc,
+    currency: 'USD',
+    allowed_currencies: templateConfig.allowedCurrencies,
+    max_per_transaction_minor: policy.ok ? perTransactionCap : 0,
+    max_total_minor: policy.ok ? cardLimitMinor(totalCap, 250000) : 0,
+    max_transactions: templateConfig.defaultMaxTransactions,
+    valid_from: now.toISOString(),
+    expires_at: expiresAt.toISOString(),
     requires_human_approval: policy.requiresApproval,
     policy_snapshot: { reserve_floor_minor: 1200000, dept_budget_remaining_minor: 250000, approval_threshold_minor: 100000 },
-    rationale: proposal.rationale, state,
+    rationale: proposal.rationale,
+    state,
   };
+
   const contract = signContract(draft, env.INTENT_HMAC_SECRET);
-  emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? 'Seven deterministic checks passed.' : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id });
+  emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? 'Deterministic policy checks passed.' : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id });
   emit('sign', policy.ok ? 'Intent contract sealed' : 'Safe denial sealed', `HMAC-SHA256 · ${contract.intent_id}`, policy.ok ? 'green' : 'rose');
   const record: IntentRecord = { contract, policy, createdAt: now.toISOString() };
   store.intents.unshift(record);
