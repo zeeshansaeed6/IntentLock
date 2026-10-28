@@ -7,6 +7,18 @@ import { store, type TransactionRecord } from '../store/memory.js';
 export type AuthorizationInput = { intentId: string; cardId: string; merchant: string; mcc: string; amountMinor: number; currency: string; now?: Date };
 export type AuthorizationResult = { accepted: boolean; reason?: string; transaction: TransactionRecord };
 
+export const INTEGRITY_ANOMALIES = new Set([
+  'INVALID_CONTRACT_SIGNATURE',
+  'UNKNOWN_INTENT_OR_CARD',
+  'MERCHANT_NOT_ALLOWED',
+  'OUT_OF_CONTRACT_TIME_WINDOW',
+  'VERDICT_DISAGREEMENT',
+]);
+
+export function isIntegrityAnomaly(reason: string): boolean {
+  return INTEGRITY_ANOMALIES.has(reason) || reason.startsWith('CONTRACT_');
+}
+
 function block(input: AuthorizationInput, reason: string): AuthorizationResult {
   const record = store.intents.find((item) => item.contract.intent_id === input.intentId);
   const card = store.cards.find((item) => item.id === input.cardId || item.airwallexCardId === input.cardId);
@@ -25,12 +37,24 @@ function block(input: AuthorizationInput, reason: string): AuthorizationResult {
     createdAt: new Date().toISOString(),
   };
   store.transactions.unshift(transaction);
-  store.addAudit({ type: 'authorization_blocked', message: `${reason} · ${input.merchant}`, tone: 'rose', metadata: { intentId: input.intentId, reason } });
-  if (card && card.status === 'ACTIVE') {
-    card.status = 'FROZEN';
-    if (record) record.contract = { ...record.contract, state: 'FROZEN' };
-    emit('anomaly', 'Authorization blocked and card frozen', reason, 'rose', { cardId: input.cardId, reason });
+  store.addAudit({
+    type: 'authorization_blocked',
+    message: `${reason} · ${input.merchant}`,
+    tone: 'rose',
+    metadata: { intentId: input.intentId, reason },
+  });
+
+  // Freeze ONLY on integrity anomalies; ordinary rule declines (limits, MCC, currency) decline without freezing
+  if (isIntegrityAnomaly(reason)) {
+    if (card && card.status === 'ACTIVE') {
+      card.status = 'FROZEN';
+      if (record) record.contract = { ...record.contract, state: 'FROZEN' };
+      emit('anomaly', 'Integrity anomaly detected · card frozen', reason, 'rose', { cardId: input.cardId, reason });
+    }
+  } else {
+    emit('block', 'Authorization declined by policy', reason, 'amber', { cardId: input.cardId, reason });
   }
+
   return { accepted: false, reason, transaction };
 }
 

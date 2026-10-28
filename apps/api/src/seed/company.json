@@ -1,0 +1,21 @@
+{
+  "companyName": "Northstar Labs Inc.",
+  "currentBalanceMinor": 2100000,
+  "reserveFloorMinor": 1200000,
+  "departmentBudgetRemainingMinor": 250000,
+  "approvalThresholdMinor": 30000,
+  "weeks": [
+    { "week": 1, "inflowMinor": 240000, "outflowMinor": 300000 },
+    { "week": 2, "inflowMinor": 0, "outflowMinor": 84000 },
+    { "week": 3, "inflowMinor": 0, "outflowMinor": 77000 },
+    { "week": 4, "inflowMinor": 0, "outflowMinor": 87000 },
+    { "week": 5, "inflowMinor": 150000, "outflowMinor": 234000 },
+    { "week": 6, "inflowMinor": 0, "outflowMinor": 82000 },
+    { "week": 7, "inflowMinor": 0, "outflowMinor": 86000 },
+    { "week": 8, "inflowMinor": 0, "outflowMinor": 82000 },
+    { "week": 9, "inflowMinor": 180000, "outflowMinor": 268000 },
+    { "week": 10, "inflowMinor": 0, "outflowMinor": 84000 },
+    { "week": 11, "inflowMinor": 0, "outflowMinor": 84000 },
+    { "week": 12, "inflowMinor": 0, "outflowMinor": 82000 }
+  ]
+}

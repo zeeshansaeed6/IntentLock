@@ -9,6 +9,7 @@ import { store } from './store/memory.js';
 import { runScenario, type ScenarioName } from './scenarios/runner.js';
 import { processWebhook } from './integrations/airwallex/webhooks.js';
 import { getGateway } from './integrations/airwallex/gateway.js';
+import { getRepository } from './store/repository.js';
 import { getDemoUser, loginDemo, logoutDemo } from './auth/demo.js';
 
 export const app = express();
@@ -114,8 +115,29 @@ app.get('/api/intents/:id', (req, res) => {
 });
 
 app.post('/api/intents/:id/approve', async (req, res) => {
-  const record = await approveIntent(req.params.id);
-  return record ? res.json(record) : res.status(409).json({ error: { code: 'INVALID_STATE', message: 'Intent is not awaiting approval' } });
+  const input = z.object({ contractSignature: z.string().optional() }).safeParse(req.body ?? {});
+  try {
+    const record = await approveIntent(req.params.id, input.success ? input.data.contractSignature : undefined);
+    return record
+      ? res.json(record)
+      : res.status(409).json({ error: { code: 'INVALID_STATE', message: 'Intent is not awaiting approval' } });
+  } catch (err) {
+    return res.status(409).json({
+      error: {
+        code: 'APPROVAL_INTEGRITY_FAILED',
+        message: err instanceof Error ? err.message : 'Approval failed',
+      },
+    });
+  }
+});
+
+app.post('/api/reset', async (_req, res) => {
+  if (env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Reset route is disabled in production.' } });
+  }
+  const repo = getRepository();
+  await repo.reset();
+  return res.json({ status: 'ok', message: 'Demo store reset successfully.' });
 });
 
 app.post('/api/intents/:id/reject', (req, res) => {

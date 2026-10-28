@@ -1,16 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { signContract, type ContractDraft } from '../domain/contract.js';
+import { signContract, verifyContract, type ContractDraft } from '../domain/contract.js';
 import { decideTreasury } from '../domain/treasury/engine.js';
 import { cardLimitMinor, evaluatePolicy } from '../domain/policy/engine.js';
 import { getTemplateConfig } from '../domain/templates/index.js';
+import { loadCompanySeed } from '../seed/loader.js';
 import { env } from '../config/env.js';
 import { store, type IntentRecord, type CardRecord } from '../store/memory.js';
 import { eventBus, type AgentEvent } from './events.js';
 import { getGateway } from '../integrations/airwallex/gateway.js';
 import { getLLMClient } from './llm/index.js';
-
-const weeks = Array.from({ length: 12 }, () => ({ inflowMinor: 0, outflowMinor: 60000 }));
-const projectionInput = { currentBalanceMinor: 2100000, reserveFloorMinor: 1200000, terms: { monthlyPriceMinor: 30000, annualPriceMinor: 500000 }, weeks };
 
 export function emit(type: string, title: string, detail: string, tone: AgentEvent['tone'], data?: Record<string, unknown>): void {
   const event = { id: randomUUID(), type, title, detail, tone, timestamp: new Date().toISOString(), data };
@@ -54,15 +52,20 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
   const llm = getLLMClient();
   const proposal = await llm.generateProposal(userRequest, untrustedContext);
   const templateConfig = getTemplateConfig(proposal.template);
+  const company = loadCompanySeed();
 
   const treasury = decideTreasury({
-    ...projectionInput,
+    currentBalanceMinor: company.currentBalanceMinor,
+    reserveFloorMinor: company.reserveFloorMinor,
+    weeks: company.weeks.map((w) => ({ inflowMinor: w.inflowMinor, outflowMinor: w.outflowMinor })),
     terms: proposal.extractedVendorTerms,
   });
   emit('plan', 'Treasury projection complete', `${treasury.recommendation === 'monthly' ? 'Monthly' : treasury.recommendation === 'annual' ? 'Annual' : 'Defer'} recommendation · ${treasury.reasons[0]}`, 'violet', { recommendation: treasury.recommendation });
 
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + templateConfig.validityDays * 24 * 60 * 60 * 1000);
+  const validityDays = treasury.recommendation === 'annual' ? 365 : treasury.recommendation === 'monthly' ? 30 : 14;
+  const expiresAt = new Date(now.getTime() + validityDays * 24 * 60 * 60 * 1000);
+  const reconsiderOn = new Date(now.getTime() + validityDays * 24 * 60 * 60 * 1000).toISOString();
 
   const perTransactionCap = Math.min(proposal.requestedAmountMinor, templateConfig.maxPerTransactionCapMinor);
   const totalCap = Math.min(proposal.requestedAmountMinor, templateConfig.maxTotalCapMinor);
@@ -77,36 +80,41 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
     currency: 'USD',
     expiresAt,
     now,
-    reserveFloorMinor: 1200000,
-    deptBudgetRemainingMinor: 250000,
-    approvalThresholdMinor: 100000,
+    reserveFloorMinor: company.reserveFloorMinor,
+    deptBudgetRemainingMinor: company.departmentBudgetRemainingMinor,
+    approvalThresholdMinor: company.approvalThresholdMinor,
   });
 
   const state = policy.ok ? (policy.requiresApproval ? 'PENDING_APPROVAL' : 'ACTIVE') : 'DRAFT';
+  const decision = policy.ok ? treasury.recommendation : 'defer';
   const allowedMerchantNames = Array.from(new Set([proposal.merchantName, ...templateConfig.allowedMerchants]));
 
   const draft: ContractDraft = {
     template: proposal.template,
     user_request: userRequest,
-    decision: policy.ok ? treasury.recommendation : 'defer',
-    reconsider_on: new Date(now.getTime() + templateConfig.validityDays * 24 * 60 * 60 * 1000).toISOString(),
+    decision,
+    reconsider_on: reconsiderOn,
     merchant: { name: proposal.merchantName, allowed_names: allowedMerchantNames },
     allowed_mcc: templateConfig.allowedMcc,
     currency: 'USD',
     allowed_currencies: templateConfig.allowedCurrencies,
     max_per_transaction_minor: policy.ok ? perTransactionCap : 0,
-    max_total_minor: policy.ok ? cardLimitMinor(totalCap, 250000) : 0,
+    max_total_minor: policy.ok ? cardLimitMinor(totalCap, company.departmentBudgetRemainingMinor) : 0,
     max_transactions: templateConfig.defaultMaxTransactions,
     valid_from: now.toISOString(),
     expires_at: expiresAt.toISOString(),
     requires_human_approval: policy.requiresApproval,
-    policy_snapshot: { reserve_floor_minor: 1200000, dept_budget_remaining_minor: 250000, approval_threshold_minor: 100000 },
+    policy_snapshot: {
+      reserve_floor_minor: company.reserveFloorMinor,
+      dept_budget_remaining_minor: company.departmentBudgetRemainingMinor,
+      approval_threshold_minor: company.approvalThresholdMinor,
+    },
     rationale: proposal.rationale,
     state,
   };
 
   const contract = signContract(draft, env.INTENT_HMAC_SECRET);
-  emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? 'Deterministic policy checks passed.' : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id });
+  emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? `Deterministic policy checks passed (${policy.requiresApproval ? 'awaiting human approval' : 'auto-approved'}).` : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id });
   emit('sign', policy.ok ? 'Intent contract sealed' : 'Safe denial sealed', `HMAC-SHA256 · ${contract.intent_id}`, policy.ok ? 'green' : 'rose');
   const record: IntentRecord = { contract, policy, createdAt: now.toISOString() };
   store.intents.unshift(record);
@@ -114,11 +122,21 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
   return record;
 }
 
-export async function approveIntent(intentId: string): Promise<IntentRecord | undefined> {
+export async function approveIntent(intentId: string, expectedSignature?: string): Promise<IntentRecord | undefined> {
   const record = store.intents.find((item) => item.contract.intent_id === intentId);
   if (!record || record.contract.state !== 'PENDING_APPROVAL') return undefined;
+
+  // Enforce cryptographic contract binding
+  if (!verifyContract(record.contract, env.INTENT_HMAC_SECRET)) {
+    throw new Error('CONTRACT_TAMPERED: Contract signature verification failed at approval time.');
+  }
+
+  if (expectedSignature && record.contract.signature !== expectedSignature) {
+    throw new Error('SIGNATURE_MISMATCH: Contract signature does not match presentation snapshot.');
+  }
+
   record.contract = { ...record.contract, state: 'ACTIVE' };
-  emit('approval', 'Human approval received', 'Approval matched the exact signed merchant, amount, currency, and terms.', 'green', { intentId });
+  emit('approval', 'Human approval received', 'Approval matched the exact signed merchant, amount, currency, and terms.', 'green', { intentId, signature: record.contract.signature });
   await issueCard(record);
   return record;
 }

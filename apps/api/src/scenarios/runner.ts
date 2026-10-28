@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createIntent, issueCard, emit } from '../agent/graph.js';
+import { createIntent, issueCard, approveIntent, emit } from '../agent/graph.js';
 import { authorize } from '../enforcement/authorization.js';
 import { store } from '../store/memory.js';
 import { getGateway } from '../integrations/airwallex/gateway.js';
@@ -8,13 +8,21 @@ export type ScenarioName = 'pass' | 'limit' | 'mcc' | 'currency' | 'redteam' | '
 
 async function activeFixture() {
   let record = store.intents.find((item) => item.contract.state === 'ACTIVE');
-  if (!record) record = await createIntent('Buy a team plan for our design tool, 10 seats, keep it cost-efficient.');
+  if (!record) {
+    record = await createIntent('Buy a team plan for our design tool, 10 seats, keep it cost-efficient.');
+    if (record.contract.state === 'PENDING_APPROVAL') {
+      record = (await approveIntent(record.contract.intent_id))!;
+    }
+  }
   const card = store.cards.find((item) => item.intentId === record.contract.intent_id) ?? (await issueCard(record));
   return { record, card };
 }
 
 async function freshFixture() {
-  const record = await createIntent(`Buy a team plan for our design tool, 10 seats, keep it cost-efficient. [scenario ${randomUUID().slice(0, 8)}]`);
+  let record = await createIntent(`Buy a team plan for our design tool, 10 seats, keep it cost-efficient. [scenario ${randomUUID().slice(0, 8)}]`);
+  if (record.contract.state === 'PENDING_APPROVAL') {
+    record = (await approveIntent(record.contract.intent_id))!;
+  }
   const card = store.cards.find((item) => item.intentId === record.contract.intent_id) ?? (await issueCard(record));
   return { record, card };
 }

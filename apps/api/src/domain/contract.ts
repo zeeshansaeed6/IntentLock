@@ -15,26 +15,63 @@ export function canonicalize(value: unknown): string {
   return JSON.stringify(sortValue(value));
 }
 
-function unsignedContract(contract: IntentContract): Omit<IntentContract, 'signature'> {
-  const { signature: _signature, ...unsigned } = contract;
-  return unsigned;
+export type ContractTerms = Omit<IntentContract, 'intent_id' | 'signature' | 'state'>;
+
+export function contractTerms(contract: IntentContract | ContractDraft): ContractTerms {
+  const {
+    template,
+    user_request,
+    decision,
+    reconsider_on,
+    merchant,
+    allowed_mcc,
+    currency,
+    allowed_currencies,
+    max_per_transaction_minor,
+    max_total_minor,
+    max_transactions,
+    valid_from,
+    expires_at,
+    requires_human_approval,
+    policy_snapshot,
+    rationale,
+  } = contract as any;
+  return {
+    template,
+    user_request,
+    decision,
+    reconsider_on,
+    merchant,
+    allowed_mcc,
+    currency,
+    allowed_currencies,
+    max_per_transaction_minor,
+    max_total_minor,
+    max_transactions,
+    valid_from,
+    expires_at,
+    requires_human_approval,
+    policy_snapshot,
+    rationale,
+  };
 }
 
 export function signContract(draft: ContractDraft, secret: string): IntentContract {
-  const sourceHash = createHash('sha256').update(canonicalize(draft)).digest('hex');
-  const unsigned = { ...draft, intent_id: `intent_${sourceHash.slice(0, 24)}` };
-  const signature = createHmac('sha256', secret).update(canonicalize(unsigned)).digest('hex');
+  const terms = contractTerms(draft);
+  const sourceHash = createHash('sha256').update(canonicalize(terms)).digest('hex');
+  const intent_id = `intent_${sourceHash.slice(0, 24)}`;
+  const unsigned = { ...draft, intent_id };
+  const signature = createHmac('sha256', secret).update(canonicalize({ ...terms, intent_id })).digest('hex');
   return contractSchema.parse({ ...unsigned, signature });
 }
 
 export function verifyContract(contract: IntentContract, secret: string): boolean {
   const parsed = contractSchema.safeParse(contract);
   if (!parsed.success) return false;
-  const unsigned = unsignedContract(parsed.data);
-  const { intent_id: intentId, ...draft } = unsigned;
-  const sourceHash = createHash('sha256').update(canonicalize(draft)).digest('hex');
-  if (intentId !== `intent_${sourceHash.slice(0, 24)}`) return false;
-  const expected = createHmac('sha256', secret).update(canonicalize(unsigned)).digest('hex');
+  const terms = contractTerms(parsed.data);
+  const sourceHash = createHash('sha256').update(canonicalize(terms)).digest('hex');
+  if (parsed.data.intent_id !== `intent_${sourceHash.slice(0, 24)}`) return false;
+  const expected = createHmac('sha256', secret).update(canonicalize({ ...terms, intent_id: parsed.data.intent_id })).digest('hex');
   const actualBuffer = Buffer.from(parsed.data.signature, 'utf8');
   const expectedBuffer = Buffer.from(expected, 'utf8');
   return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
