@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, CreditCard, ShieldCheck, DollarSign, Activity } from 'lucide-react';
+import { Sparkles, ArrowRight, CreditCard, ShieldCheck, DollarSign, Activity, TrendingUp } from 'lucide-react';
 import { useStore } from '../state/useStore';
 import { submitIntent } from '../lib/api';
 import { formatMoney } from '../lib/formatters';
@@ -16,6 +17,7 @@ const QUICK_PROMPTS = [
 ];
 
 export const CommandCenterPage: React.FC = () => {
+  const navigate = useNavigate();
   const [requestText, setRequestText] = useState('Buy a team plan for our design tool, 10 seats, keep it cost-efficient.');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,9 +75,12 @@ export const CommandCenterPage: React.FC = () => {
         className="hero-intent-card"
       >
         <div className="intent-card-glow" />
-        <div className="intent-label">
-          <span className="spark-icon"><Sparkles size={14} /></span>
-          <span>AUTONOMOUS PURCHASE AGENT · NATURAL LANGUAGE INTENT</span>
+        <div className="intent-label" style={{ justifyContent: 'space-between', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="spark-icon dashboard-icon-badge"><Sparkles size={14} /></span>
+            <span>AUTONOMOUS PURCHASE AGENT · NATURAL LANGUAGE INTENT</span>
+          </div>
+          <span className="premium-badge">CAPITALIO THEMED</span>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -146,6 +151,46 @@ export const CommandCenterPage: React.FC = () => {
           detail="Policy declines & anomalies stopped"
           tone="rose"
         />
+      </div>
+
+      {/* Capitalio Treasury Intelligence Banner */}
+      <div
+        className="panel group cursor-pointer transition-all duration-200 hover:border-white/20"
+        style={{
+          background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.12), rgba(0, 218, 146, 0.08))',
+          borderColor: 'rgba(99, 102, 241, 0.28)',
+          minHeight: 'auto',
+          marginBottom: 18,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '14px 20px',
+        }}
+        onClick={() => navigate('/analytics')}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="dashboard-icon-badge" style={{ width: 36, height: 36, borderRadius: 8, display: 'grid', placeItems: 'center', color: '#00DA92' }}>
+            <TrendingUp size={18} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <strong style={{ fontSize: 13, color: '#fff' }}>Capitalio Treasury Intelligence & Asset Allocation</strong>
+              <span className="premium-badge">NEW</span>
+            </div>
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>
+              Deep portfolio metrics, historical returns, S&P 500 benchmarks & AI smart rebalancing insights
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="ghost-button"
+          style={{ color: '#00DA92', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, background: 'rgba(0,218,146,0.08)', padding: '6px 12px', borderRadius: 6 }}
+        >
+          <span>Open Dashboard</span>
+          <ArrowRight size={14} />
+        </button>
       </div>
 
       {/* Main Grid: Runway Chart + Enforcement Stack */}

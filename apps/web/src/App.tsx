@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Shield,
   Activity,
+  TrendingUp,
 } from 'lucide-react';
 import { useStore } from './state/useStore';
 import { useSSE } from './lib/useSSE';
@@ -24,6 +25,7 @@ import { Button } from './components/Button';
 import { LandingPage } from './pages/Landing';
 import { LoginPage } from './pages/Login';
 import { CommandCenterPage } from './pages/CommandCenter';
+import { CapitalioAnalyticsPage } from './pages/CapitalioAnalytics';
 import { IntentsPage } from './pages/Intents';
 import { CardsPage } from './pages/Cards';
 import { TransactionsPage } from './pages/Transactions';
@@ -32,6 +34,7 @@ import { RedTeamLabPage } from './pages/RedTeamLab';
 
 const NAV_ITEMS = [
   { label: 'Command Center', path: '/console', icon: LayoutDashboard },
+  { label: 'Treasury & Analytics', path: '/analytics', icon: TrendingUp },
   { label: 'Intents', path: '/intents', icon: BrainCircuit },
   { label: 'Cards', path: '/cards', icon: CreditCard },
   { label: 'Transactions', path: '/transactions', icon: BarChart3 },
@@ -80,10 +83,13 @@ const ConsoleLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="workspace-switcher">
           <div className="workspace-avatar">AL</div>
           <div>
-            <strong>Acme AI Labs</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <strong>Acme AI Labs</strong>
+              <span className="premium-badge">PREMIUM</span>
+            </div>
             <span>Airwallex Commercial Issuing</span>
           </div>
-          <Shield size={14} color="#6ee7b7" />
+          <Shield size={14} color="#00DA92" />
         </div>
 
         <div className="nav-section-label">GOVERNANCE & CONTROLS</div>
@@ -95,7 +101,7 @@ const ConsoleLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             return (
               <button
                 key={item.path}
-                className={`side-nav ${isActive ? 'active' : ''}`}
+                className={`side-nav ${isActive ? 'active active-sidebar-item' : ''}`}
                 onClick={() => {
                   navigate(item.path);
                   setMobileOpen(false);
@@ -131,7 +137,7 @@ const ConsoleLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </aside>
 
       {/* Main Container */}
-      <div className="console-main">
+      <div className="console-main dashboard-dot-grid">
         {/* Topbar */}
         <header className="console-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -228,6 +234,14 @@ export default function App() {
           element={
             <ConsoleLayout>
               <CommandCenterPage />
+            </ConsoleLayout>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ConsoleLayout>
+              <CapitalioAnalyticsPage />
             </ConsoleLayout>
           }
         />

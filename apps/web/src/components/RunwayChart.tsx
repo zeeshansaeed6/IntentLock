@@ -64,16 +64,16 @@ export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
         </div>
         <div style={{ display: 'flex', gap: 14, fontSize: 10, alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 12, height: 2, background: '#22d3ee', display: 'inline-block' }} />
+            <span style={{ width: 12, height: 2, background: 'var(--chart-4, #00DA92)', display: 'inline-block', borderRadius: 1 }} />
             <span style={{ color: '#94a3b8' }}>Monthly ($50/mo)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 12, height: 2, background: '#818cf8', borderTop: '1px dashed #818cf8', display: 'inline-block' }} />
+            <span style={{ width: 12, height: 2, background: 'var(--chart-2, #7466F6)', borderTop: '1px dashed var(--chart-2, #7466F6)', display: 'inline-block' }} />
             <span style={{ color: '#94a3b8' }}>Annual ($500 upfront)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 12, height: 1, background: '#f59e0b', display: 'inline-block' }} />
-            <span style={{ color: '#f59e0b' }}>Reserve Floor</span>
+            <span style={{ width: 12, height: 1, background: 'var(--chart-3, #FF7A00)', display: 'inline-block' }} />
+            <span style={{ color: 'var(--chart-3, #FF7A00)' }}>Reserve Floor</span>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@ export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
       <div style={{ width: '100%', height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(147,160,191,0.08)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
             <XAxis dataKey="week" stroke="#64748b" fontSize={9} tickLine={false} />
             <YAxis
               stroke="#64748b"
@@ -92,21 +92,22 @@ export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
             />
             <Tooltip
               contentStyle={{
-                background: 'rgba(11,19,38,0.95)',
-                border: '1px solid rgba(147,160,191,0.2)',
+                background: 'rgba(21, 21, 23, 0.95)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: 8,
                 fontSize: 11,
                 fontFamily: 'JetBrains Mono',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
               }}
               formatter={(value: any) => [`$${Number(value).toLocaleString()}`, '']}
             />
             <ReferenceLine
               y={reserveFloorDollars}
-              stroke="#f59e0b"
+              stroke="var(--chart-3, #FF7A00)"
               strokeDasharray="4 4"
               label={{
                 value: `Floor: $${(reserveFloorDollars / 1000).toFixed(0)}k`,
-                fill: '#f59e0b',
+                fill: 'var(--chart-3, #FF7A00)',
                 fontSize: 9,
                 position: 'insideTopRight',
               }}
@@ -116,7 +117,7 @@ export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
                 x: `W${breachWeek}`,
                 y: Math.round(breachValue / 100),
                 r: 5,
-                fill: '#f43f5e',
+                fill: 'var(--chart-5, #E10B05)',
                 stroke: '#fff',
                 strokeWidth: 2,
               })
@@ -124,7 +125,7 @@ export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
             <Line
               type="monotone"
               dataKey="Monthly"
-              stroke="#22d3ee"
+              stroke="var(--chart-4, #00DA92)"
               strokeWidth={2.5}
               dot={false}
               activeDot={{ r: 4 }}
@@ -132,7 +133,7 @@ export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
             <Line
               type="monotone"
               dataKey="Annual"
-              stroke="#818cf8"
+              stroke="var(--chart-2, #7466F6)"
               strokeWidth={2}
               strokeDasharray="4 4"
               dot={false}
