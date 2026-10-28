@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 .env.*
+.env.local
 !.env.example
 *.log
 .DS_Store
@@ -10,7 +11,11 @@ opencode.jsonc
 *.tsbuildinfo
 backups/
 *.dump
+*.enc
 *.pem
 *.key
 *.cert
 *.crt
+coverage/
+.turbo/
+

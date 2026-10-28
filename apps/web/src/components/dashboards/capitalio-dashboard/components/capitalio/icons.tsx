@@ -3,13 +3,21 @@ import { cn } from '@/lib/utils'
 
 type IconProps = SVGProps<SVGSVGElement>
 
-function Icon({ className, ...props }: IconProps) {
+function Icon({ className, style, ...props }: IconProps) {
   return (
     <svg
       viewBox="0 0 20 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn('size-5', className)}
+      className={cn('size-5 shrink-0 inline-block', className)}
+      style={{
+        width: '1.25rem',
+        height: '1.25rem',
+        maxWidth: '100%',
+        maxHeight: '100%',
+        flexShrink: 0,
+        ...style,
+      }}
       {...props}
     />
   )

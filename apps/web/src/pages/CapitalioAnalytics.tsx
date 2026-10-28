@@ -49,12 +49,26 @@ function CapitalioAnalyticsInner() {
               TREASURY SAFEGUARD ACTIVE
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-            Treasury & Portfolio Intelligence
-            <span className="text-xs font-normal text-muted-foreground px-2 py-1 rounded bg-muted">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 4, marginBottom: 4 }}>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.8px', color: '#ffffff' }}>
+              Treasury & Portfolio Intelligence
+            </h1>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#94a3b8',
+                padding: '3px 10px',
+                borderRadius: 6,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+            >
               Powered by Capitalio Engine
             </span>
-          </h1>
+          </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             Real-time asset allocation, risk-adjusted returns, and autonomous liquidity insights.
           </p>
@@ -63,15 +77,34 @@ function CapitalioAnalyticsInner() {
         {/* View Toggle + Period Filter + Export */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Tab Selector */}
-          <div className="flex items-center rounded-lg border border-border bg-card/60 p-1 text-xs">
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              borderRadius: 8,
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              background: 'rgba(21, 21, 23, 0.8)',
+              padding: 3,
+            }}
+          >
             <button
               type="button"
               onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
-                activeTab === 'overview'
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'text-muted-foreground hover:text-white'
-              }`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: 0,
+                transition: 'all 0.15s ease',
+                background: activeTab === 'overview' ? 'var(--primary, #6366f1)' : 'transparent',
+                color: activeTab === 'overview' ? '#ffffff' : '#94a3b8',
+                boxShadow: activeTab === 'overview' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+              }}
             >
               <LayoutDashboard size={13} />
               <span>Overview</span>
@@ -79,11 +112,21 @@ function CapitalioAnalyticsInner() {
             <button
               type="button"
               onClick={() => setActiveTab('analytics')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
-                activeTab === 'analytics'
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'text-muted-foreground hover:text-white'
-              }`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: 0,
+                transition: 'all 0.15s ease',
+                background: activeTab === 'analytics' ? 'var(--primary, #6366f1)' : 'transparent',
+                color: activeTab === 'analytics' ? '#ffffff' : '#94a3b8',
+                boxShadow: activeTab === 'analytics' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+              }}
             >
               <TrendingUp size={13} />
               <span>Deep Analytics</span>
