@@ -187,8 +187,8 @@ export class LiveGateway implements AirwallexGateway {
     })) as Record<string, unknown>;
 
     const normalized = mapRestAuthorization({
-      process_result: rawRes.process_result as string | undefined,
-      type: rawRes.type as string | undefined,
+      process_result: (rawRes.process_result ?? (rawRes.status === 'CLEARING' || rawRes.status === 'APPROVED' ? 'APPROVED' : rawRes.status)) as string | undefined,
+      type: (rawRes.type ?? rawRes.status) as string | undefined,
       failure_reason: (rawRes.failure_reason ?? rawRes.decline_reason ?? rawRes.message) as string | undefined,
     });
 

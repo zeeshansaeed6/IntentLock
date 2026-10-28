@@ -10,7 +10,8 @@
     "typecheck": "npm run typecheck -w @intentlock/shared && npm run typecheck -w @intentlock/api && npm run typecheck -w @intentlock/web",
     "test": "npm run test -w @intentlock/api",
     "smoke": "npm run smoke -w @intentlock/api",
-    "seed": "npm run seed -w @intentlock/api"
+    "seed": "npm run seed -w @intentlock/api",
+    "demo": "npm run seed && concurrently -k -n api,web -c cyan,magenta \"npm run dev -w @intentlock/api\" \"npm run dev -w @intentlock/web\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
