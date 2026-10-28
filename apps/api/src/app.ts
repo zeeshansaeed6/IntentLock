@@ -110,8 +110,20 @@ import { sanitizeNoSql } from './config/sanitizer.js';
 
 app.use((req, _res, next) => {
   if (req.body) req.body = sanitizeNoSql(req.body);
-  if (req.query) req.query = sanitizeNoSql(req.query) as any;
-  if (req.params) req.params = sanitizeNoSql(req.params) as any;
+  if (req.query && typeof req.query === 'object') {
+    for (const key of Object.keys(req.query)) {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete (req.query as any)[key];
+      }
+    }
+  }
+  if (req.params && typeof req.params === 'object') {
+    for (const key of Object.keys(req.params)) {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete (req.params as any)[key];
+      }
+    }
+  }
   next();
 });
 
