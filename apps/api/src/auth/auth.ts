@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import type { Request, Response, NextFunction } from 'express';
+import { env } from '../config/env.js';
 
 export type UserRole = 'admin' | 'user';
 
@@ -36,9 +37,9 @@ const BLOCKED_PASSWORDS = new Set([
   'intentlock',
 ]);
 
-// Initialize default admin user with hashed password
-const defaultAdminEmail = (process.env.ADMIN_EMAIL || 'admin@intentlock.io').toLowerCase();
-const defaultAdminPassword = process.env.ADMIN_INITIAL_PASSWORD || 'IntentLockAdmin2026!';
+// Initialize default admin user with hashed password from validated environment
+const defaultAdminEmail = (env.ADMIN_EMAIL || 'admin@intentlock.io').toLowerCase();
+const defaultAdminPassword = env.ADMIN_INITIAL_PASSWORD;
 const defaultAdminHash = bcrypt.hashSync(defaultAdminPassword, BCRYPT_SALT_ROUNDS);
 
 const adminUser: UserAccount = {
@@ -50,9 +51,10 @@ const adminUser: UserAccount = {
 };
 users.set(defaultAdminEmail, adminUser);
 
-// Initialize a standard non-admin demo user
+// Initialize a standard non-admin demo user with a random password generated at startup
 const regularUserEmail = 'user@intentlock.io';
-const regularUserHash = bcrypt.hashSync('RegularUserPass2026!', BCRYPT_SALT_ROUNDS);
+const demoUserPassword = process.env.DEMO_USER_PASSWORD || randomBytes(16).toString('hex');
+const regularUserHash = bcrypt.hashSync(demoUserPassword, BCRYPT_SALT_ROUNDS);
 users.set(regularUserEmail, {
   id: 'usr_regular_002',
   email: regularUserEmail,
@@ -60,6 +62,20 @@ users.set(regularUserEmail, {
   role: 'user',
   createdAt: new Date().toISOString(),
 });
+
+// In development, print the demo login once to the console
+let devCredentialsPrinted = false;
+export function printDevCredentialsOnce(): void {
+  if (env.NODE_ENV === 'development' && !devCredentialsPrinted) {
+    devCredentialsPrinted = true;
+    console.log('\n======================================================');
+    console.log(' [IntentLock Auth] Development Credentials Initialized:');
+    console.log(`   Admin Login: ${defaultAdminEmail} / ${defaultAdminPassword}`);
+    console.log(`   Demo User:   ${regularUserEmail} / ${demoUserPassword}`);
+    console.log('======================================================\n');
+  }
+}
+printDevCredentialsOnce();
 
 export async function registerAccount(input: {
   email: string;

@@ -81,7 +81,7 @@ export const ApprovalInbox: React.FC = () => {
               Human Approval Required
             </h3>
             <p style={{ margin: '2px 0 0', fontSize: 11, color: '#94a3b8' }}>
-              Autonomous purchase proposal exceeds the ${formatMoney(contract.policy_snapshot.approval_threshold_minor)} policy threshold.
+              Autonomous purchase proposal exceeds the {formatMoney(contract.policy_snapshot.approval_threshold_minor)} policy threshold.
             </p>
           </div>
         </div>

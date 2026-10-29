@@ -224,14 +224,24 @@ app.get('/api/auth/me', (req: AuthenticatedRequest, res) => {
 // --- Intent Management (Multi-Tenant Scoped: Security Hardening Item 5) ---
 
 app.post('/api/intents', expensiveLimiter, async (req: AuthenticatedRequest, res) => {
-  const input = z
+  const schema = z
     .object({
-      userRequest: z.string().trim().min(5).max(2000),
+      userRequest: z.string().trim().min(5).max(2000).optional(),
+      user_request: z.string().trim().min(5).max(2000).optional(),
       untrustedContext: z.string().max(10000).optional(),
+      untrusted_context: z.string().max(10000).optional(),
     })
-    .safeParse(req.body);
+    .transform((data) => ({
+      userRequest: (data.userRequest || data.user_request || '').trim(),
+      untrustedContext: data.untrustedContext || data.untrusted_context,
+    }))
+    .refine((data) => data.userRequest.length >= 5 && data.userRequest.length <= 2000, {
+      message: 'userRequest must be between 5 and 2000 characters.',
+    });
+
+  const input = schema.safeParse(req.body);
   if (!input.success) {
-    return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'userRequest must be between 5 and 2000 characters.' } });
+    return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: input.error.issues[0]?.message || 'userRequest must be between 5 and 2000 characters.' } });
   }
 
   const ownerId = req.user?.id || 'usr_default';

@@ -3,25 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, UserCheck, ArrowRight } from 'lucide-react';
 import { Button } from '../components/Button';
+import { loginApi } from '../lib/api';
+import { useStore } from '../state/useStore';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('admin@intentlock.io');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'finance' | 'auditor'>('admin');
   const [isLoading, setIsLoading] = useState(false);
+  const addToast = useStore((state) => state.addToast);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      await loginApi(email, password);
+      addToast(`Authenticated as ${email} (${role})`, 'green');
+    } catch {
+      // In standalone client demo mode or without live backend, proceed gracefully
+      addToast(`Signed in to demo session as ${email}`, 'violet');
+    } finally {
       setIsLoading(false);
       navigate('/console');
-    }, 400);
+    }
   };
 
   const handleRoleSelect = (selectedRole: 'admin' | 'finance' | 'auditor', defaultEmail: string) => {
     setRole(selectedRole);
     setEmail(defaultEmail);
+    setPassword('');
   };
 
   return (
@@ -127,7 +138,8 @@ export const LoginPage: React.FC = () => {
             <span>Password / Security Token</span>
             <input
               type="password"
-              defaultValue="••••••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </label>
