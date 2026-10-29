@@ -31,6 +31,10 @@ IntentLock is an autonomous agentic purchasing gateway built for Track 2 (Intent
                                          ▼
 +-----------------------------------------------------------------------------------+
 |                            AUTHENTICATION & ACCESS CONTROL                        |
+|  - Zero hardcoded passwords or default secrets anywhere in source                 |
+|  - Strict production startup verification: requires ADMIN_INITIAL_PASSWORD &      |
+|    INTENT_HMAC_SECRET in NODE_ENV=production                                      |
+|  - Dynamic startup credential generation in dev/test (logged once to console)     |
 |  - Bcrypt (Cost 12) password hashing with unique salt                             |
 |  - Dictionary check rejecting top common passwords (min 8 chars)                  |
 |  - 24-hr session token rotation with constant-time cryptographic verification     |
@@ -65,12 +69,12 @@ Each of the 16 security checklist items has been implemented, validated with aut
 
 | Item | Security Control | Implementation Details | Evidence & Automated Proof |
 | :--- | :--- | :--- | :--- |
-| **1** | **Hide API Keys** | All API keys (Airwallex, Gemini/OpenAI, MongoDB, Webhook secret) exist solely in server environment. No secrets in web client. Regex logger masks PAN, CVV, bearer tokens, and keys. | `apps/api/src/config/logger.test.ts` passes 3 tests. Grep search on `apps/web/dist` confirmed 0 secret strings. |
-| **2** | **Keep Secrets off Git** | Comprehensive `.gitignore` covering `.env`, `.env.*`, `backups/`, `*.enc`, certs, and keys. Full git commit log analyzed for high-entropy secrets and keys. | Git log scan: 0 secrets committed in history. `.gitignore` validated. |
+| **1** | **Zero Hardcoded Secrets & Secret Masking** | All hardcoded passwords and default secrets removed from source (`auth.ts`, `env.ts`, `Login.tsx`). In production, process fails to boot unless `ADMIN_INITIAL_PASSWORD` and `INTENT_HMAC_SECRET` are set. In development/test, secure random values are generated at boot and printed once to console. Regex logger masks PAN, CVV, bearer tokens, and keys. | `apps/api/src/config/env.test.ts` (6 tests) and `logger.test.ts` (3 tests). `git grep` verifies zero hardcoded passwords in codebase. |
+| **2** | **Keep Secrets off Git** | Comprehensive `.gitignore` covering `.env`, `.env.*`, `backups/`, `*.enc`, certs, and keys. Git commit log analyzed for high-entropy secrets and keys. `.env.example` sanitized with placeholder keys only. | Git log scan: 0 secrets committed in history. `git check-ignore -v .env` validated. |
 | **3** | **Lock Admin Endpoints** | Admin endpoints (`/api/reset`, `/api/scenarios/:name/run`, `/api/reconcile`) protected with `requireAdmin` middleware. `/api/reset` strictly disabled in production. | `apps/api/src/auth/security.test.ts` (Item 3) asserts 401 for anonymous and 403 for regular users. |
-| **4** | **Production Authentication** | Replaced demo login with production auth: registration, login, logout, 24-hr session cookies (`sess_...`). HttpOnly, SameSite=Strict, Secure flags. | `apps/api/src/auth/security.test.ts` (Item 4) & `apps/api/src/auth/headers.test.ts` assert cookie flags & session lifecycle. |
+| **4** | **Production Authentication** | Production auth: registration, login, logout, 24-hr session cookies (`sess_...`). HttpOnly, SameSite=Strict, Secure flags. No hardcoded credentials pre-filled in login client. | `apps/api/src/auth/security.test.ts` (Item 4) & `apps/api/src/auth/headers.test.ts` assert cookie flags & session lifecycle. |
 | **5** | **Multi-Tenant Isolation** | Scoped `intents`, `contracts`, `cards`, `transactions`, `audits`, and SSE streams by `owner_id`. Cross-user access blocked on the server. | `apps/api/src/auth/security.test.ts` (Item 5) asserts User B querying User A's resource receives 0 results / 403. |
-| **6** | **Bad Input & NoSQL Injection** | Zod schemas validate all inputs. Strict 100kb request body limit. `sanitizeNoSql` middleware recursively strips `$gt`, `$where`, and dot keys. | `apps/api/src/auth/security.test.ts` (Item 6) asserts malicious payloads stripped of injection keys. |
+| **6** | **Bad Input & NoSQL Injection** | Zod schemas validate all inputs. Strict 100kb request body limit. `sanitizeNoSql` middleware recursively strips `$gt`, `$where`, and dot keys. Multi-cased intent payloads accepted securely. | `apps/api/src/auth/security.test.ts` (Item 6) asserts malicious payloads stripped of injection keys. |
 | **7** | **Rate Limiting & Anti-Bruteforce** | `authLimiter` limits login/registration to 30 attempts per 15 min. `expensiveLimiter` limits scenario runs and LLM calls. Constant-time generic error responses. | Express rate limiting active on `/api/auth/*` and `/api/scenarios/*`. Generic error message on invalid auth. |
 | **8** | **HTTPS Everywhere** | Automatic production HTTPS redirect (`x-forwarded-proto`). Helmet sets HSTS (`maxAge: 31536000, includeSubDomains: true, preload: true`) and strict CSP. CORS locked to `WEB_ORIGIN`. | `apps/api/src/auth/headers.test.ts` asserts HSTS, CSP, and CORS headers. |
 | **9** | **Password Hashing** | Passwords hashed using `bcryptjs` (cost 12) with per-user salt. Minimum 8 characters, common passwords blocked, constant-time verification. | `apps/api/src/auth/security.test.ts` (Item 9) asserts minimum length, dictionary rejection, and successful hash auth. |
@@ -79,8 +83,8 @@ Each of the 16 security checklist items has been implemented, validated with aut
 | **12** | **Disable Debug Mode** | `app.disable('x-powered-by')`. Public source maps and verbose logs disabled in production. Dev shortcuts disabled in `NODE_ENV=production`. | `apps/api/src/auth/headers.test.ts` asserts `x-powered-by` header is null. |
 | **13** | **Centralized Error Redaction** | Express error handler returns generic `{ error: { code, message, requestId } }`. Stack traces, file paths, and upstream error bodies strictly hidden. | `apps/api/src/auth/headers.test.ts` asserts stack traces and internal errors are not returned to the client. |
 | **14** | **Update Old Dependencies** | Upgraded `zod` to `^4.6.7` and `vitest` to `^5.0.5`. Added Dependabot configuration `.github/dependabot.yml`. | `npm audit` report: **found 0 vulnerabilities** (0 moderate, 0 high, 0 critical). |
-| **15** | **Dead Code Cleanup** | Removed obsolete `demo.ts` auth file and unneeded `@types/bcryptjs`. Retained full scripted offline demo fallback. | Full build, typecheck, and test suite run cleanly after cleanup. |
-| **16** | **Full Security Audit & Second Pass** | Comprehensive audit across static analysis, git leak verification, header inspection, authorization scoping, and 49 unit/integration tests. | **49 tests passing across 15 test files**. 0 security vulnerabilities. |
+| **15** | **Dead Code & Legacy Asset Cleanup** | Removed obsolete `demo.ts` auth file, deleted legacy benchmark files (`baseline/index.html` and `apps/web/public/baseline.html`), retaining clean and lightweight code. | Full build, typecheck, and test suite run cleanly after cleanup. |
+| **16** | **Full Security Audit & Verification** | Comprehensive audit across static analysis, git leak verification, header inspection, authorization scoping, and automated tests. | **55 tests passing across 16 test files**. 0 security vulnerabilities. |
 
 ---
 

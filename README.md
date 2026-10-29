@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Dual--Mode-Live%20Sandbox%20%7C%20Offline%20Scripted-22c55e?style=flat-square" alt="Dual Mode" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/TypeScript-Strict%20Monorepo-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="Strict TypeScript" />
-  <img src="https://img.shields.io/badge/Tests-49%20Passing%20(15%20Suites)-success?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-55%20Passing%20(16%20Suites)-success?style=flat-square" alt="Tests" />
   <img src="https://img.shields.io/badge/Security-Milestone%206%20Hardened-blueviolet?style=flat-square" alt="Security Hardened" />
   <img src="https://img.shields.io/badge/License-MIT-gray?style=flat-square" alt="MIT License" />
 </p>
@@ -261,7 +261,7 @@ The smoke test verifies:
 
 ## Automated Test Suite & Quality Assurance
 
-IntentLock includes comprehensive automated test coverage with **49 tests across 15 test suites**:
+IntentLock includes comprehensive automated test coverage with **55 tests across 16 test suites**:
 
 ```bash
 # Run the complete Vitest test suite:
