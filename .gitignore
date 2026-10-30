@@ -56,3 +56,6 @@ coverage/
 .cache/
 .opencode/
 opencode.jsonc
+
+# Video Recordings
+recordings/*.webm
