@@ -249,13 +249,25 @@ LLM_API_KEY=your_gemini_api_key
 ```bash
 npm run smoke
 ```
-The smoke test verifies:
-- Authentication and token exchange with Airwallex.
-- Checking / creating funded USD Global Accounts.
-- Provisioning `DELEGATE` cardholders.
-- Issuing a virtual card with transaction limits and MCC whitelists.
-- Testing simulated clearing passes and limit-breach declines.
-- Testing remote card status updates (Freezing).
+The smoke test verifies 7 live Airwallex API capabilities:
+- Authentication & scoped JWT token generation with Airwallex Sandbox.
+- Checking / creating funded USD Global Accounts (e.g. `6d418c5e-ce9b-468c-9057-d3bf400b8ab1`).
+- Provisioning `DELEGATE` cardholders live on Airwallex (`READY` status).
+- Issuing virtual cards bound to the live Airwallex cardholder.
+- Testing simulated clearing passes and limit-breach declines (`TRANSACTION_LIMIT_EXCEEDED`).
+- Testing remote card status updates (Freezing to `INACTIVE`).
+
+### Automated Judge Mode Video Recording
+To record a live headless browser walkthrough of Judge Mode connected to the live Airwallex Sandbox:
+
+```bash
+npm run record
+```
+
+This runs Google Chrome via Playwright, steps through all 7 Judge Mode scenarios, navigates across Command Center, Cards, Transactions, and Analytics, and outputs the recording:
+- **Video File**: `recordings/intentlock-live-judge-run.webm`
+- **Resolution**: 1280x720 (High Definition)
+- **Verified UI Elements**: Real Airwallex Card ID (`crd_awx_...`), real Airwallex Sandbox badges, and genuine failure reasons (`TRANSACTION_LIMIT_EXCEEDED`, `MCC_NOT_ALLOWED`, `CURRENCY_NOT_ALLOWED`, `CARD_FROZEN`).
 
 ---
 
