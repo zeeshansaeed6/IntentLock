@@ -57,5 +57,11 @@ coverage/
 .opencode/
 opencode.jsonc
 
-# Video Recordings
-recordings/*.webm
+# Video & Screen Recordings
+recordings/
+**/recordings/
+*.webm
+*.mp4
+*.mov
+*.mkv
+*.avi
