@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { IntentContract } from '@intentlock/shared';
 
 export type IntentRecord = {
@@ -45,8 +45,44 @@ export type AuditRecord = {
   tone: 'violet' | 'green' | 'rose' | 'amber';
   owner_id?: string;
   createdAt: string;
+  prevHash: string;
+  hash: string;
   metadata?: Record<string, string>;
 };
+
+export function hashAuditEntry(entry: Pick<AuditRecord, 'type' | 'message' | 'tone' | 'owner_id' | 'createdAt' | 'prevHash' | 'metadata'>): string {
+  const normalized = {
+    prevHash: entry.prevHash ?? '',
+    type: entry.type,
+    message: entry.message,
+    tone: entry.tone,
+    owner_id: entry.owner_id ?? null,
+    createdAt: entry.createdAt,
+    metadata: entry.metadata ?? {},
+  };
+  return createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
+}
+
+export function verifyAuditLog(entries: AuditRecord[]): boolean {
+  let previousHash = '';
+  const ordered = [...entries].reverse();
+
+  for (const entry of ordered) {
+    if (entry.prevHash !== previousHash) return false;
+    if (entry.hash !== hashAuditEntry({
+      type: entry.type,
+      message: entry.message,
+      tone: entry.tone,
+      owner_id: entry.owner_id,
+      createdAt: entry.createdAt,
+      prevHash: entry.prevHash,
+      metadata: entry.metadata,
+    })) return false;
+    previousHash = entry.hash;
+  }
+
+  return true;
+}
 
 class MemoryStore {
   readonly intents: IntentRecord[] = [];
@@ -54,8 +90,26 @@ class MemoryStore {
   readonly transactions: TransactionRecord[] = [];
   readonly audit: AuditRecord[] = [];
 
-  addAudit(entry: Omit<AuditRecord, 'id' | 'createdAt'>): AuditRecord {
-    const record = { ...entry, id: randomUUID(), createdAt: new Date().toISOString() };
+  addAudit(entry: Omit<AuditRecord, 'id' | 'createdAt' | 'prevHash' | 'hash'>): AuditRecord {
+    const createdAt = new Date().toISOString();
+    const prevHash = this.audit[0]?.hash ?? '';
+    const record: AuditRecord = {
+      ...entry,
+      id: randomUUID(),
+      createdAt,
+      prevHash,
+      hash: '',
+    };
+    record.hash = hashAuditEntry({
+      type: record.type,
+      message: record.message,
+      tone: record.tone,
+      owner_id: record.owner_id,
+      createdAt: record.createdAt,
+      prevHash: record.prevHash,
+      metadata: record.metadata,
+    });
+
     this.audit.unshift(record);
     return record;
   }
