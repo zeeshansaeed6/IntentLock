@@ -74,7 +74,7 @@ export const TransactionsPage: React.FC = () => {
                 <span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <strong>{tx.merchant}</strong>
-                    {tx.isSandbox && <Badge isSandbox />}
+                    {tx.isSimulated ? <Badge tone="amber">SIMULATED FALLBACK</Badge> : tx.isSandbox && <Badge isSandbox />}
                   </div>
                   <small style={{ color: '#64748b', fontSize: 10 }}>
                     MCC: {tx.mcc || 'N/A'} · {tx.currency}

@@ -13,6 +13,7 @@ export interface CardVisualProps {
   remainingMinor: number;
   status: 'ACTIVE' | 'FROZEN' | 'CANCELLED';
   isSandbox?: boolean;
+  isSimulated?: boolean;
   expiresAt?: string;
   onToggleFreeze: (cardId: string, currentStatus: string) => Promise<void>;
 }
@@ -25,6 +26,7 @@ export const CardVisual: React.FC<CardVisualProps> = ({
   remainingMinor,
   status,
   isSandbox = false,
+  isSimulated = false,
   expiresAt,
   onToggleFreeze,
 }) => {
@@ -98,7 +100,7 @@ export const CardVisual: React.FC<CardVisualProps> = ({
           <span style={{ fontWeight: 800, letterSpacing: -0.5, fontSize: 13, textTransform: 'uppercase' }}>
             Intent<span style={{ color: '#67e8f9' }}>Lock</span>
           </span>
-          {isSandbox && <Badge isSandbox />}
+          {isSimulated ? <Badge tone="amber">SIMULATED FALLBACK</Badge> : isSandbox && <Badge isSandbox />}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

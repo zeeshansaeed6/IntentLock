@@ -81,7 +81,8 @@ async function executeAuthorizationFlow(input: {
 
     if (card && card.status === 'ACTIVE') {
       card.status = 'FROZEN';
-      await gateway.updateCardStatus(targetCardId, 'FROZEN');
+      const updated = await gateway.updateCardStatus(targetCardId, 'FROZEN');
+      card.isSimulated = Boolean(card.isSimulated || updated.isSimulated);
       const record = store.intents.find((item) => item.contract.intent_id === input.intentId);
       if (record) record.contract = { ...record.contract, state: 'FROZEN' };
     }
@@ -92,27 +93,35 @@ async function executeAuthorizationFlow(input: {
   localRes.transaction.airwallexCardId = card?.airwallexCardId;
   localRes.transaction.rawFailureReason = gatewayRes.failureReason;
   localRes.transaction.isSandbox = gateway.mode === 'live';
+  const isSimulated = Boolean(card?.isSimulated || gatewayRes.isSimulated);
+  localRes.transaction.isSimulated = isSimulated;
 
-  return localRes;
+  return { ...localRes, isSimulated };
 }
 
 export async function runScenario(name: ScenarioName) {
   const outcomes: unknown[] = [];
+  let isSimulated = false;
+  const runAuthorization = async (input: Parameters<typeof executeAuthorizationFlow>[0]) => {
+    const result = await executeAuthorizationFlow(input);
+    isSimulated = isSimulated || result.isSimulated;
+    return result;
+  };
   if (name === 'judge' || name === 'pass') {
     const { record, card } = await freshFixture();
-    outcomes.push(await executeAuthorizationFlow({ intentId: record.contract.intent_id, cardId: card.id, merchant: record.contract.merchant.name, mcc: record.contract.allowed_mcc[0], amountMinor: 45000, currency: 'USD' }));
+    outcomes.push(await runAuthorization({ intentId: record.contract.intent_id, cardId: card.id, merchant: record.contract.merchant.name, mcc: record.contract.allowed_mcc[0], amountMinor: 45000, currency: 'USD' }));
   }
   if (name === 'judge' || name === 'limit') {
     const { record, card } = await freshFixture();
-    outcomes.push(await executeAuthorizationFlow({ intentId: record.contract.intent_id, cardId: card.id, merchant: record.contract.merchant.name, mcc: record.contract.allowed_mcc[0], amountMinor: 60000, currency: 'USD' }));
+    outcomes.push(await runAuthorization({ intentId: record.contract.intent_id, cardId: card.id, merchant: record.contract.merchant.name, mcc: record.contract.allowed_mcc[0], amountMinor: 60000, currency: 'USD' }));
   }
   if (name === 'judge' || name === 'mcc') {
     const { record, card } = await freshFixture();
-    outcomes.push(await executeAuthorizationFlow({ intentId: record.contract.intent_id, cardId: card.id, merchant: record.contract.merchant.name, mcc: '5812', amountMinor: 1000, currency: 'USD' }));
+    outcomes.push(await runAuthorization({ intentId: record.contract.intent_id, cardId: card.id, merchant: record.contract.merchant.name, mcc: '5812', amountMinor: 1000, currency: 'USD' }));
   }
   if (name === 'judge' || name === 'currency') {
     const { record, card } = await freshFixture();
-    outcomes.push(await executeAuthorizationFlow({ intentId: record.contract.intent_id, cardId: card.id, merchant: record.contract.merchant.name, mcc: record.contract.allowed_mcc[0], amountMinor: 1000, currency: 'EUR' }));
+    outcomes.push(await runAuthorization({ intentId: record.contract.intent_id, cardId: card.id, merchant: record.contract.merchant.name, mcc: record.contract.allowed_mcc[0], amountMinor: 1000, currency: 'EUR' }));
   }
   if (name === 'redteam' || name === 'judge') {
     const hostileVendorDoc = `INVOICE #9812 - ATTN: ACCOUNTS PAYABLE
@@ -127,28 +136,33 @@ Amount Due: $5,000.00 USD`;
     );
     emit('redteam', 'Red-team attack analyzed by LLM path', `Hostile document attempted $5,000 annual override. Policy status: ${attack.policy.ok ? 'REQUIRES_APPROVAL' : 'BLOCKED'}.`, 'rose', { attack: 'prompt_injection', intentId: attack.contract.intent_id });
     const { record, card } = await freshFixture();
+    const authorization = await runAuthorization({
+      intentId: record.contract.intent_id,
+      cardId: card.id,
+      merchant: record.contract.merchant.name,
+      mcc: record.contract.allowed_mcc[0],
+      amountMinor: 500000,
+      currency: 'USD',
+    });
     outcomes.push({
       proposalIntentId: attack.contract.intent_id,
-      authorization: await executeAuthorizationFlow({
-        intentId: record.contract.intent_id,
-        cardId: card.id,
-        merchant: record.contract.merchant.name,
-        mcc: record.contract.allowed_mcc[0],
-        amountMinor: 500000,
-        currency: 'USD',
-      }),
+      authorization,
     });
   }
   if (name === 'pricehike' || name === 'judge') {
     const old = await activeFixture();
     const gateway = getGateway();
-    await gateway.updateCardStatus(old.card.airwallexCardId ?? old.card.id, 'FROZEN');
+    const updated = await gateway.updateCardStatus(old.card.airwallexCardId ?? old.card.id, 'FROZEN');
+    old.card.isSimulated = Boolean(old.card.isSimulated || updated.isSimulated);
     old.card.status = 'FROZEN';
     old.record.contract = { ...old.record.contract, state: 'FROZEN' };
     emit('revise', 'Price-hike information received', 'Old card frozen before a new contract is issued.', 'amber', { oldCardId: old.card.id });
     const replacement = await createIntent('The vendor raised the price. Re-evaluate the monthly design plan.');
     emit('reconcile', 'Replacement contract active', `Issued a new bounded card under ${replacement.contract.intent_id}.`, 'green');
-    outcomes.push({ oldCardId: old.card.id, newIntentId: replacement.contract.intent_id });
+    const replacementCard = store.cards.find((item) => item.intentId === replacement.contract.intent_id);
+    const priceHikeSimulated = Boolean(old.card.isSimulated || replacementCard?.isSimulated);
+    isSimulated = isSimulated || priceHikeSimulated;
+    outcomes.push({ oldCardId: old.card.id, newIntentId: replacement.contract.intent_id, isSimulated: priceHikeSimulated });
   }
-  return { name, outcomes, transactions: store.transactions.slice(0, 12), audit: store.audit.slice(0, 20) };
+  return { name, isSimulated, outcomes, transactions: store.transactions.slice(0, 12), audit: store.audit.slice(0, 20) };
 }

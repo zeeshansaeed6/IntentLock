@@ -11,7 +11,7 @@ const SCENARIO_STEPS = [
   { name: 'currency', title: 'Step 4/7: Currency Mismatch', narration: 'Declined: EUR currency rejected against USD-only contract.' },
   { name: 'redteam', title: 'Step 5/7: Prompt Injection Defense', narration: 'Hostile vendor terms safely parsed; limits and merchant locked.' },
   { name: 'pricehike', title: 'Step 6/7: Post-Approval Price Hike', narration: 'Secondary surcharge detected; card frozen immediately.' },
-  { name: 'judge', title: 'Step 7/7: Full Verification Suite', narration: 'All 7 tracks verified against real Airwallex sandbox cards.' },
+  { name: 'judge', title: 'Step 7/7: Full Verification Suite', narration: 'All 7 tracks checked against runtime enforcement.' },
 ];
 
 export const JudgeBar: React.FC = () => {
@@ -36,8 +36,15 @@ export const JudgeBar: React.FC = () => {
     });
 
     try {
-      await triggerScenario(stepData.name);
+      const result = await triggerScenario(stepData.name);
       await loadAll();
+      if (stepData.name === 'judge') {
+        setJudge({
+          narration: result.isSimulated
+            ? 'Full verification suite completed with simulated fallbacks.'
+            : 'All 7 tracks verified against real Airwallex sandbox cards.',
+        });
+      }
       addToast(`${stepData.title} completed`, 'green');
     } catch {
       addToast(`Scenario ${stepData.name} execution failed`, 'rose');
@@ -63,7 +70,7 @@ export const JudgeBar: React.FC = () => {
         <Scale size={14} color="#a5b4fc" />
         <strong>Judge Mode:</strong>
         <span style={{ color: '#cbd5e1' }}>
-          {judge.step > 0 ? `Step ${judge.step}/${judge.totalSteps}: ${judge.narration}` : 'Evaluate 7 runtime enforcement tracks against real Airwallex sandbox.'}
+          {judge.step > 0 ? `Step ${judge.step}/${judge.totalSteps}: ${judge.narration}` : 'Evaluate 7 runtime enforcement tracks.'}
         </span>
       </div>
 

@@ -21,6 +21,7 @@ export type CardItem = {
   remainingMinor: number;
   status: 'ACTIVE' | 'FROZEN' | 'CANCELLED';
   isSandbox?: boolean;
+  isSimulated?: boolean;
   createdAt: string;
 };
 
@@ -38,7 +39,14 @@ export type TransactionItem = {
   reason?: string;
   rawFailureReason?: string;
   isSandbox?: boolean;
+  isSimulated?: boolean;
   createdAt: string;
+};
+
+export type ScenarioResult = {
+  name: string;
+  isSimulated: boolean;
+  outcomes: unknown[];
 };
 
 export type AuditItem = {
@@ -167,7 +175,7 @@ export async function fetchAudit(): Promise<AuditItem[]> {
   return res.json();
 }
 
-export async function triggerScenario(name: string): Promise<any> {
+export async function triggerScenario(name: string): Promise<ScenarioResult> {
   const res = await fetch(`${API_BASE}/api/scenarios/${name}/run`, {
     method: 'POST',
     credentials: 'include',

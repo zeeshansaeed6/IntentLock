@@ -19,6 +19,7 @@ export type CardRecord = {
   remainingMinor: number;
   owner_id?: string;
   isSandbox?: boolean;
+  isSimulated?: boolean;
 };
 
 export type TransactionRecord = {
@@ -36,6 +37,7 @@ export type TransactionRecord = {
   rawFailureReason?: string;
   owner_id?: string;
   isSandbox?: boolean;
+  isSimulated?: boolean;
   createdAt: string;
 };
 export type AuditRecord = {

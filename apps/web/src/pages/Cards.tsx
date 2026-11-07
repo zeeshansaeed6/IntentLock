@@ -66,6 +66,7 @@ export const CardsPage: React.FC = () => {
               remainingMinor={card.remainingMinor}
               status={card.status}
               isSandbox={card.isSandbox}
+              isSimulated={card.isSimulated}
               onToggleFreeze={handleToggleFreeze}
             />
           ))}

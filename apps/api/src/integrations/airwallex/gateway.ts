@@ -46,7 +46,7 @@ export interface AirwallexGateway {
     activeTo: string;
     maxTransactions: number;
   }): Promise<GatewayCardResult>;
-  updateCardStatus(cardId: string, status: 'ACTIVE' | 'FROZEN' | 'CLOSED'): Promise<{ cardId: string; status: 'ACTIVE' | 'FROZEN' | 'CLOSED' }>;
+  updateCardStatus(cardId: string, status: 'ACTIVE' | 'FROZEN' | 'CLOSED'): Promise<{ cardId: string; status: 'ACTIVE' | 'FROZEN' | 'CLOSED'; isSimulated?: boolean }>;
   simulateAuthorization(input: {
     cardId: string;
     amountMinor: number;
@@ -213,7 +213,7 @@ export class LiveGateway implements AirwallexGateway {
       limitMinor: input.maxTotalMinor,
       remainingMinor: input.maxTotalMinor,
       isSandbox: true,
-      isSimulated: String(airwallexCardId).startsWith('sim_'),
+      isSimulated: cardholderId.startsWith('cardholder_sim_') || airwallexCardId.startsWith('sim_'),
     };
   }
 
@@ -405,7 +405,7 @@ export class MockGateway implements AirwallexGateway {
       return { accepted: false, sourceStatus: 'DECLINED', failureReason: `CARD_${card.status}`, airwallexTransactionId: txId };
     }
     if (input.currency !== env.WALLET_CURRENCY) {
-      return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'CURRENCY_NOT_ALLOWED', airwallexTransactionId: txId, isSimulated: true };
+      return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'CURRENCY_NOT_ALLOWED', airwallexTransactionId: txId };
     }
     if (input.amountMinor > card.limitMinor || input.amountMinor > card.remainingMinor) {
       return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'TRANSACTION_LIMIT_EXCEEDED', airwallexTransactionId: txId };

@@ -35,6 +35,7 @@ function block(input: AuthorizationInput, reason: string): AuthorizationResult {
     reason,
     owner_id: record?.owner_id || card?.owner_id,
     isSandbox: card?.isSandbox,
+    isSimulated: card?.isSimulated,
     createdAt: new Date().toISOString(),
   };
   store.transactions.unshift(transaction);
@@ -95,6 +96,7 @@ export function authorize(input: AuthorizationInput): AuthorizationResult {
     outcome: 'ALLOWED',
     owner_id: record.owner_id || card.owner_id,
     isSandbox: card.isSandbox,
+    isSimulated: card.isSimulated,
     createdAt: now.toISOString(),
   };
   store.transactions.unshift(transaction);

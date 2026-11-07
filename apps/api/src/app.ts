@@ -362,6 +362,7 @@ app.post('/api/reconcile', (req: AuthenticatedRequest, res, next) => {
           reason: isAllowed ? undefined : (tx.failureReason ?? 'DECLINED'),
           rawFailureReason: tx.failureReason,
           isSandbox: true,
+          isSimulated: card?.isSimulated,
           createdAt: tx.createdAt,
         });
         reconciledCount++;
@@ -419,7 +420,8 @@ app.post('/api/cards/:id/freeze', async (req: AuthenticatedRequest, res) => {
 
   const gateway = getGateway();
   try {
-    await gateway.updateCardStatus(card.airwallexCardId ?? card.id, schema.data.status);
+    const updated = await gateway.updateCardStatus(card.airwallexCardId ?? card.id, schema.data.status);
+    card.isSimulated = Boolean(card.isSimulated || updated.isSimulated);
   } catch {
     return res.status(502).json({
       error: { code: 'GATEWAY_ERROR', message: 'Airwallex card update failed.' },

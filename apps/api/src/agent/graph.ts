@@ -41,6 +41,7 @@ export async function issueCard(record: IntentRecord): Promise<CardRecord> {
     remainingMinor: issued.remainingMinor,
     owner_id: record.owner_id,
     isSandbox: issued.isSandbox,
+    isSimulated: issued.isSimulated,
   };
   record.cardId = card.id;
   store.cards.unshift(card);
