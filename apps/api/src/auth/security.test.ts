@@ -9,10 +9,12 @@ import {
 import { store, verifyAuditLog } from '../store/memory.js';
 import { createIntent } from '../agent/graph.js';
 import { eventBus } from '../agent/events.js';
+import { env } from '../config/env.js';
 
 describe('Milestone 6: Security Hardening Automated Test Suite', () => {
   beforeEach(() => {
     store.reset();
+    env.DEMO_MODE = 'scripted';
   });
 
   describe('Item 3: Admin Endpoint Protection & RBAC', () => {
@@ -170,6 +172,21 @@ describe('Milestone 6: Security Hardening Automated Test Suite', () => {
       disconnectAdmin();
     });
 
+    it('delivers events without an owner only to admins', () => {
+      const userWrite = vi.fn();
+      const adminWrite = vi.fn();
+      const disconnectUser = eventBus.connect({ write: userWrite } as any, 'user-a', 'user');
+      const disconnectAdmin = eventBus.connect({ write: adminWrite } as any, 'admin-1', 'admin');
+
+      eventBus.publish({ id: 'evt-system', type: 'system', title: 'System event', detail: 'No owner', tone: 'violet', timestamp: new Date().toISOString() });
+
+      expect(userWrite).not.toHaveBeenCalled();
+      expect(adminWrite).toHaveBeenCalledOnce();
+
+      disconnectUser();
+      disconnectAdmin();
+    });
+
     it('verifies the append-only audit log hash chain', () => {
       const first = store.addAudit({ type: 'snapshot', message: 'first event', tone: 'green' });
       const second = store.addAudit({ type: 'snapshot', message: 'second event', tone: 'green', owner_id: 'user-a' });
@@ -183,4 +200,3 @@ describe('Milestone 6: Security Hardening Automated Test Suite', () => {
     });
   });
 });
-

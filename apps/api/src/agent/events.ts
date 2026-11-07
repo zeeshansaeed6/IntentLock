@@ -24,8 +24,7 @@ class EventBus {
     const message = `id: ${event.id}\ndata: ${JSON.stringify(event)}\n\n`;
     for (const [client, meta] of this.clients.entries()) {
       const isAdmin = meta.role === 'admin';
-      if (event.ownerId && meta.userId && meta.userId !== event.ownerId && !isAdmin) continue;
-      client.write(message);
+      if (isAdmin || (event.ownerId && meta.userId === event.ownerId)) client.write(message);
     }
   }
 }
