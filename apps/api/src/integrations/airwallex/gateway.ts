@@ -79,24 +79,24 @@ function extractMaskedLastFour(value: unknown): string {
 }
 
 function extractErrorText(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  if (error && typeof error === 'object') {
-    const candidate = error as Record<string, unknown>;
-    if (typeof candidate.message === 'string') return candidate.message;
-    if (typeof candidate.error === 'string') return candidate.error;
-    if (candidate.body && typeof candidate.body === 'object') {
-      const body = candidate.body as Record<string, unknown>;
-      if (typeof body.message === 'string') return body.message;
-      if (typeof body.error === 'string') return body.error;
-    }
+  return collectErrorSignals(error).join(' | ');
+}
+
+function collectErrorSignals(error: unknown): string[] {
+  if (typeof error === 'string') return [error];
+  if (error instanceof Error) {
+    const candidate = error as Error & { body?: unknown };
+    return [error.message, ...collectErrorSignals(candidate.body)];
   }
-  return '';
+  if (!error || typeof error !== 'object') return [];
+
+  const candidate = error as Record<string, unknown>;
+  return ['message', 'code', 'error_code', 'error', 'body']
+    .flatMap((key) => collectErrorSignals(candidate[key]));
 }
 
 function isIssuingNotEnabledError(error: unknown): boolean {
-  const text = extractErrorText(error);
-  return /issuing.*not.*enabled|not.*enabled.*issuing|issuing.*disabled|card.*issuing.*not.*enabled|400.*\/api\/v1\/issuing\/cards\/create|\/api\/v1\/issuing\/cards\/create.*400|400.*\/api\/v1\/simulation\/issuing\/create|\/api\/v1\/simulation\/issuing\/create.*400/i.test(text);
+  return collectErrorSignals(error).some((signal) => /issuing[\s_-]+(?:is[\s_-]+)?not[\s_-]+enabled/i.test(signal));
 }
 
 function logSimulatedFallback(action: string, error: unknown): void {
@@ -222,7 +222,7 @@ export class LiveGateway implements AirwallexGateway {
     try {
       await this.client.updateCard(cardId, status);
     } catch (error) {
-      if (!isIssuingNotEnabledError(error) && !cardId.startsWith('sim_')) throw error;
+      if (!isIssuingNotEnabledError(error)) throw error;
       logSimulatedFallback('card freeze status update', error);
       return { cardId, status, isSimulated: true };
     }

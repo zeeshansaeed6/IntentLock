@@ -2,9 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createIntent, approveIntent } from '../../agent/graph.js';
 import { store } from '../../store/memory.js';
 import { authorize } from '../../enforcement/authorization.js';
+import { env } from '../../config/env.js';
 
 describe('Milestone 3: Approval binding and decline isolation', () => {
-  beforeEach(() => store.reset());
+  beforeEach(() => {
+    store.reset();
+    env.DEMO_MODE = 'scripted';
+  });
 
   it('reaches PENDING_APPROVAL for default SaaS request and binds approval to contract hash', async () => {
     // Default SaaS request is $500, which exceeds the $300 approval threshold

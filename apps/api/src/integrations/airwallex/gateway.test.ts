@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { LiveGateway } from './gateway.js';
-import { AirwallexClient } from './client.js';
+import { AirwallexClient, AirwallexError } from './client.js';
 import { env } from '../../config/env.js';
 
 describe('Milestone 5: LiveGateway Contract Tests with Mocked Fetch', () => {
@@ -19,6 +19,27 @@ describe('Milestone 5: LiveGateway Contract Tests with Mocked Fetch', () => {
     (env as any).AIRWALLEX_CLIENT_ID = originalClientId;
     (env as any).AIRWALLEX_API_KEY = originalApiKey;
   });
+
+  const cardInput = {
+    intentId: 'intent_test_400',
+    maxPerTransactionMinor: 50000,
+    maxTotalMinor: 50000,
+    allowedMcc: ['5734'],
+    allowedCurrencies: ['USD'],
+    activeFrom: new Date().toISOString(),
+    activeTo: new Date(Date.now() + 86400000).toISOString(),
+    maxTransactions: 1,
+  };
+
+  function gatewayWithCardCreationError(error: unknown) {
+    const client = new AirwallexClient('https://api-sandbox.airwallex.com');
+    vi.spyOn(client, 'login').mockResolvedValue('mock-token');
+    vi.spyOn(client, 'listGlobalAccounts').mockResolvedValue({ items: [{ id: 'ga_test' }] });
+    vi.spyOn(client, 'simulateDeposit').mockResolvedValue({});
+    vi.spyOn(client, 'createCardholder').mockResolvedValue({ cardholder_id: 'ch_test' });
+    const createVirtualCard = vi.spyOn(client, 'createVirtualCard').mockRejectedValue(error);
+    return { gateway: new LiveGateway(client), createVirtualCard };
+  }
 
   it('authenticates, ensures account, creates virtual card, and freezes it with correct API calls', async () => {
     const mockResponses: Record<string, any> = {
@@ -123,5 +144,28 @@ describe('Milestone 5: LiveGateway Contract Tests with Mocked Fetch', () => {
         body: expect.stringContaining('"card_status":"INACTIVE"'),
       })
     );
+  });
+
+  it('does not simulate a fallback for an unrelated 400 response', async () => {
+    const error = new AirwallexError(400, 'Airwallex request failed: 400 /api/v1/issuing/cards/create', {
+      message: 'Invalid card payload',
+      code: 'INVALID_REQUEST',
+    });
+    const { gateway, createVirtualCard } = gatewayWithCardCreationError(error);
+
+    await expect(gateway.issueCard(cardInput)).rejects.toBe(error);
+    expect(createVirtualCard).toHaveBeenCalledOnce();
+  });
+
+  it('simulates a fallback when the error code says issuing is not enabled', async () => {
+    const error = new AirwallexError(400, 'Airwallex request failed: 400 /api/v1/issuing/cards/create', {
+      code: 'ISSUING_NOT_ENABLED',
+    });
+    const { gateway } = gatewayWithCardCreationError(error);
+
+    const card = await gateway.issueCard(cardInput);
+
+    expect(card.isSimulated).toBe(true);
+    expect(card.cardId).toMatch(/^sim_/);
   });
 });

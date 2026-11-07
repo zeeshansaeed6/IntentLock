@@ -1,9 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { cardLimitMinor } from './engine.js';
 import { createIntent } from '../../agent/graph.js';
 import { store } from '../../store/memory.js';
+import { env } from '../../config/env.js';
 
 describe('Milestone 5: Invariant Property-Style Tests', () => {
+  beforeEach(() => {
+    env.DEMO_MODE = 'scripted';
+    store.reset();
+  });
+
   it('property: cardLimitMinor(proposal, deptBudget) is invariant <= min(userBudget, deptBudget)', () => {
     // Generate 100 randomized budget pairs (both normal and edge cases)
     const testCases: Array<[number, number]> = [
