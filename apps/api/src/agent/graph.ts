@@ -10,10 +10,10 @@ import { eventBus, type AgentEvent } from './events.js';
 import { getGateway } from '../integrations/airwallex/gateway.js';
 import { getLLMClient } from './llm/index.js';
 
-export function emit(type: string, title: string, detail: string, tone: AgentEvent['tone'], data?: Record<string, unknown>): void {
-  const event = { id: randomUUID(), type, title, detail, tone, timestamp: new Date().toISOString(), data };
+export function emit(type: string, title: string, detail: string, tone: AgentEvent['tone'], data?: Record<string, unknown>, ownerId?: string): void {
+  const event = { id: randomUUID(), type, title, detail, tone, timestamp: new Date().toISOString(), ownerId, data };
   eventBus.publish(event);
-  store.addAudit({ type, message: `${title}: ${detail}`, tone, metadata: data ? Object.fromEntries(Object.entries(data).filter(([, value]) => typeof value === 'string') as [string, string][]) : undefined });
+  store.addAudit({ type, message: `${title}: ${detail}`, tone, owner_id: ownerId, metadata: data ? Object.fromEntries(Object.entries(data).filter(([, value]) => typeof value === 'string') as [string, string][]) : undefined });
 }
 
 export async function issueCard(record: IntentRecord): Promise<CardRecord> {
@@ -44,12 +44,12 @@ export async function issueCard(record: IntentRecord): Promise<CardRecord> {
   };
   record.cardId = card.id;
   store.cards.unshift(card);
-  emit('issue_card', 'Virtual card issued', `Masked card ending ${card.lastFour} · limit bound to ${card.limitMinor} minor units.${card.isSandbox ? ' (Airwallex Sandbox)' : ''}`, 'green', { cardId: card.id });
+  emit('issue_card', 'Virtual card issued', `Masked card ending ${card.lastFour} · limit bound to ${card.limitMinor} minor units.${card.isSandbox ? ' (Airwallex Sandbox)' : ''}`, 'green', { cardId: card.id }, record.owner_id);
   return card;
 }
 
 export async function createIntent(userRequest: string, untrustedContext?: string, ownerId?: string): Promise<IntentRecord> {
-  emit('interpret', 'Intent interpreted', 'Mapped natural language into a typed purchase request.', 'violet');
+  emit('interpret', 'Intent interpreted', 'Mapped natural language into a typed purchase request.', 'violet', undefined, ownerId);
   const llm = getLLMClient();
   const proposal = await llm.generateProposal(userRequest, untrustedContext);
   const templateConfig = getTemplateConfig(proposal.template);
@@ -61,7 +61,7 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
     weeks: company.weeks.map((w) => ({ inflowMinor: w.inflowMinor, outflowMinor: w.outflowMinor })),
     terms: proposal.extractedVendorTerms,
   });
-  emit('plan', 'Treasury projection complete', `${treasury.recommendation === 'monthly' ? 'Monthly' : treasury.recommendation === 'annual' ? 'Annual' : 'Defer'} recommendation · ${treasury.reasons[0]}`, 'violet', { recommendation: treasury.recommendation });
+  emit('plan', 'Treasury projection complete', `${treasury.recommendation === 'monthly' ? 'Monthly' : treasury.recommendation === 'annual' ? 'Annual' : 'Defer'} recommendation · ${treasury.reasons[0]}`, 'violet', { recommendation: treasury.recommendation }, ownerId);
 
   const now = new Date();
   const validityDays = treasury.recommendation === 'annual' ? 365 : treasury.recommendation === 'monthly' ? 30 : 14;
@@ -116,8 +116,8 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
   };
 
   const contract = signContract(draft, env.INTENT_HMAC_SECRET);
-  emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? `Deterministic policy checks passed (${policy.requiresApproval ? 'awaiting human approval' : 'auto-approved'}).` : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id });
-  emit('sign', policy.ok ? 'Intent contract sealed' : 'Safe denial sealed', `HMAC-SHA256 · ${contract.intent_id}`, policy.ok ? 'green' : 'rose');
+  emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? `Deterministic policy checks passed (${policy.requiresApproval ? 'awaiting human approval' : 'auto-approved'}).` : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id }, ownerId);
+  emit('sign', policy.ok ? 'Intent contract sealed' : 'Safe denial sealed', `HMAC-SHA256 · ${contract.intent_id}`, policy.ok ? 'green' : 'rose', undefined, ownerId);
   const record: IntentRecord = { contract, policy, owner_id: ownerId, createdAt: now.toISOString() };
   store.intents.unshift(record);
   if (record.contract.state === 'ACTIVE') await issueCard(record);
@@ -138,7 +138,7 @@ export async function approveIntent(intentId: string, expectedSignature?: string
   }
 
   record.contract = { ...record.contract, state: 'ACTIVE' };
-  emit('approval', 'Human approval received', 'Approval matched the exact signed merchant, amount, currency, and terms.', 'green', { intentId, signature: record.contract.signature });
+  emit('approval', 'Human approval received', 'Approval matched the exact signed merchant, amount, currency, and terms.', 'green', { intentId, signature: record.contract.signature }, record.owner_id);
   await issueCard(record);
   return record;
 }

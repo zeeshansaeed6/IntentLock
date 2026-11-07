@@ -453,10 +453,10 @@ app.get('/api/audit', (req: AuthenticatedRequest, res) => {
 
 app.get('/api/company', (_req, res) => res.json(getCompanyConfig()));
 
-app.get('/api/stream', (req, res) => {
+app.get('/api/stream', requireAuth, (req: AuthenticatedRequest, res) => {
   res.status(200).set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
   res.flushHeaders();
-  const disconnect = eventBus.connect(res);
+  const disconnect = eventBus.connect(res, req.user?.id, req.user?.role);
   req.on('close', disconnect);
 });
 

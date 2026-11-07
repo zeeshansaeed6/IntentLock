@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import {
   registerAccount,
   authenticateCredentials,
@@ -6,8 +6,9 @@ import {
   requireAdmin,
   type AuthenticatedRequest,
 } from './auth.js';
-import { store } from '../store/memory.js';
+import { store, verifyAuditLog } from '../store/memory.js';
 import { createIntent } from '../agent/graph.js';
+import { eventBus } from '../agent/events.js';
 
 describe('Milestone 6: Security Hardening Automated Test Suite', () => {
   beforeEach(() => {
@@ -142,6 +143,43 @@ describe('Milestone 6: Security Hardening Automated Test Suite', () => {
       expect(sanitized.password).toEqual({});
       expect(sanitized.nested['config.injection']).toBeUndefined();
       expect(sanitized.nested.safeKey).toBe(12345);
+    });
+  });
+
+  describe('Stream Isolation & Audit Integrity', () => {
+    it('keeps user A events hidden from user B while admins see all events', () => {
+      const userAWrite = vi.fn();
+      const userBWrite = vi.fn();
+      const adminWrite = vi.fn();
+
+      const disconnectA = eventBus.connect({ write: userAWrite } as any, 'user-a', 'user');
+      const disconnectB = eventBus.connect({ write: userBWrite } as any, 'user-b', 'user');
+      const disconnectAdmin = eventBus.connect({ write: adminWrite } as any, 'admin-1', 'admin');
+
+      eventBus.publish({ id: 'evt-a', type: 'execute', title: 'User A event', detail: 'A-only event', tone: 'green', timestamp: new Date().toISOString(), ownerId: 'user-a' });
+      eventBus.publish({ id: 'evt-b', type: 'execute', title: 'User B event', detail: 'B-only event', tone: 'green', timestamp: new Date().toISOString(), ownerId: 'user-b' });
+
+      expect(userAWrite).toHaveBeenCalledTimes(1);
+      expect(userBWrite).toHaveBeenCalledTimes(1);
+      expect(adminWrite).toHaveBeenCalledTimes(2);
+      expect(String(userAWrite.mock.calls[0][0])).toContain('user-a');
+      expect(String(userBWrite.mock.calls[0][0])).toContain('user-b');
+
+      disconnectA();
+      disconnectB();
+      disconnectAdmin();
+    });
+
+    it('verifies the append-only audit log hash chain', () => {
+      const first = store.addAudit({ type: 'snapshot', message: 'first event', tone: 'green' });
+      const second = store.addAudit({ type: 'snapshot', message: 'second event', tone: 'green', owner_id: 'user-a' });
+
+      expect(verifyAuditLog(store.audit)).toBe(true);
+      expect(first.prevHash).toBe('');
+      expect(second.prevHash).toBe(first.hash);
+
+      const tampered = { ...store.audit[0], message: 'tampered' };
+      expect(verifyAuditLog([tampered, ...store.audit.slice(1)])).toBe(false);
     });
   });
 });

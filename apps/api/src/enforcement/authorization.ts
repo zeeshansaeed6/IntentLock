@@ -51,10 +51,10 @@ function block(input: AuthorizationInput, reason: string): AuthorizationResult {
     if (card && card.status === 'ACTIVE') {
       card.status = 'FROZEN';
       if (record) record.contract = { ...record.contract, state: 'FROZEN' };
-      emit('anomaly', 'Integrity anomaly detected · card frozen', reason, 'rose', { cardId: input.cardId, reason });
+      emit('anomaly', 'Integrity anomaly detected · card frozen', reason, 'rose', { cardId: input.cardId, reason }, record?.owner_id || card?.owner_id);
     }
   } else {
-    emit('block', 'Authorization declined by policy', reason, 'amber', { cardId: input.cardId, reason });
+    emit('block', 'Authorization declined by policy', reason, 'amber', { cardId: input.cardId, reason }, record?.owner_id || card?.owner_id);
   }
 
   return { accepted: false, reason, transaction };
@@ -105,6 +105,6 @@ export function authorize(input: AuthorizationInput): AuthorizationResult {
     owner_id: record.owner_id || card.owner_id,
     metadata: { intentId: input.intentId, transactionId: transaction.id },
   });
-  emit('execute', 'Authorization verified', `Allowed ${input.currency} ${input.amountMinor / 100} at ${input.merchant}.`, 'green', { transactionId: transaction.id });
+  emit('execute', 'Authorization verified', `Allowed ${input.currency} ${input.amountMinor / 100} at ${input.merchant}.`, 'green', { transactionId: transaction.id }, record.owner_id || card.owner_id);
   return { accepted: true, transaction };
 }
