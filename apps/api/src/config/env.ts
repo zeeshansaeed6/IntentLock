@@ -12,6 +12,7 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(4100),
   WEB_ORIGIN: z.string().url().default('http://localhost:5173'),
+  WALLET_CURRENCY: z.string().trim().min(3).max(3).default('USD'),
   DEMO_MODE: z.enum(['scripted', 'live']).default('scripted'),
   AIRWALLEX_BASE_URL: z.string().url().default('https://api.sandbox.airwallex.com'),
   AIRWALLEX_CLIENT_ID: z.string().optional(),

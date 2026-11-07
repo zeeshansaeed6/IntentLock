@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { env } from '../../config/env.js';
+import { logger } from '../../config/logger.js';
 import { airwallex, AirwallexClient } from './client.js';
 import { buildCardholderPayload, buildVirtualCardPayload, type CardControls } from './payloads.js';
 import { mapRestAuthorization, type NormalizedAuthorization } from './mapper.js';
@@ -12,11 +13,13 @@ export type GatewayCardResult = {
   limitMinor: number;
   remainingMinor: number;
   isSandbox: boolean;
+  isSimulated?: boolean;
 };
 
 export type GatewayAuthorizationResult = NormalizedAuthorization & {
   airwallexTransactionId?: string;
   failureReason?: string;
+  isSimulated?: boolean;
 };
 
 export type GatewayTransactionItem = {
@@ -75,6 +78,32 @@ function extractMaskedLastFour(value: unknown): string {
   return '4242';
 }
 
+function extractErrorText(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object') {
+    const candidate = error as Record<string, unknown>;
+    if (typeof candidate.message === 'string') return candidate.message;
+    if (typeof candidate.error === 'string') return candidate.error;
+    if (candidate.body && typeof candidate.body === 'object') {
+      const body = candidate.body as Record<string, unknown>;
+      if (typeof body.message === 'string') return body.message;
+      if (typeof body.error === 'string') return body.error;
+    }
+  }
+  return '';
+}
+
+function isIssuingNotEnabledError(error: unknown): boolean {
+  const text = extractErrorText(error);
+  return /issuing.*not.*enabled|not.*enabled.*issuing|issuing.*disabled|card.*issuing.*not.*enabled|400.*\/api\/v1\/issuing\/cards\/create|\/api\/v1\/issuing\/cards\/create.*400|400.*\/api\/v1\/simulation\/issuing\/create|\/api\/v1\/simulation\/issuing\/create.*400/i.test(text);
+}
+
+function logSimulatedFallback(action: string, error: unknown): void {
+  const reason = extractErrorText(error) || 'Airwallex issuing is not enabled for this tenant';
+  logger.warn(`[IntentLock] Simulated fallback activated for ${action}: ${reason}`);
+}
+
 export class LiveGateway implements AirwallexGateway {
   readonly mode = 'live' as const;
   private cachedGlobalAccountId: string | undefined;
@@ -85,7 +114,8 @@ export class LiveGateway implements AirwallexGateway {
 
   async ensureFundedAccount(): Promise<{ globalAccountId: string; balanceMinor: number }> {
     if (this.cachedGlobalAccountId) {
-      return { globalAccountId: this.cachedGlobalAccountId, balanceMinor: 2500000 };
+      const balance = await this.getFundedBalance();
+      return { globalAccountId: this.cachedGlobalAccountId, balanceMinor: balance?.totalMinor ?? 2500000 };
     }
     await this.client.login();
     const rawAccounts = await this.client.listGlobalAccounts();
@@ -97,7 +127,7 @@ export class LiveGateway implements AirwallexGateway {
          []);
     let accountId = accountList.map(extractId).find(Boolean);
     if (!accountId) {
-      const created = await this.client.createGlobalAccount({ countryCode: 'US', currency: 'USD', transferMethod: 'LOCAL' });
+      const created = await this.client.createGlobalAccount({ countryCode: 'US', currency: env.WALLET_CURRENCY, transferMethod: 'LOCAL' });
       accountId = extractId(created);
     }
     if (!accountId) throw new Error('Could not obtain an Airwallex Global Account ID');
@@ -119,11 +149,19 @@ export class LiveGateway implements AirwallexGateway {
 
   private async getOrCreateCardholder(): Promise<string> {
     if (this.cachedCardholderId) return this.cachedCardholderId;
-    const cardholder = await this.client.createCardholder(`intentlock-delegate-${Date.now()}@intentlock.local`);
-    const id = extractId(cardholder);
-    if (!id) throw new Error('Airwallex did not return a cardholder ID');
-    this.cachedCardholderId = id;
-    return id;
+    try {
+      const cardholder = await this.client.createCardholder(`intentlock-delegate-${Date.now()}@intentlock.local`);
+      const id = extractId(cardholder);
+      if (!id) throw new Error('Airwallex did not return a cardholder ID');
+      this.cachedCardholderId = id;
+      return id;
+    } catch (error) {
+      if (!isIssuingNotEnabledError(error)) throw error;
+      logSimulatedFallback('cardholder creation', error);
+      const simulatedCardholderId = `cardholder_sim_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+      this.cachedCardholderId = simulatedCardholderId;
+      return simulatedCardholderId;
+    }
   }
 
   async issueCard(input: {
@@ -154,10 +192,11 @@ export class LiveGateway implements AirwallexGateway {
     let cardRes: Record<string, unknown> | undefined;
     try {
       cardRes = (await this.client.createVirtualCard(payload)) as Record<string, unknown>;
-    } catch {
-      // Sandbox fallback when tenant issuing BIN is unprovisioned by Airwallex support
+    } catch (error) {
+      if (!isIssuingNotEnabledError(error)) throw error;
+      logSimulatedFallback('virtual card issuance', error);
       cardRes = {
-        card_id: `crd_awx_${cardholderId.replace(/-/g, '').slice(0, 16)}`,
+        card_id: `sim_${randomUUID().replace(/-/g, '').slice(0, 16)}`,
         masked_card_number: '4242',
       };
     }
@@ -174,15 +213,18 @@ export class LiveGateway implements AirwallexGateway {
       limitMinor: input.maxTotalMinor,
       remainingMinor: input.maxTotalMinor,
       isSandbox: true,
+      isSimulated: String(airwallexCardId).startsWith('sim_'),
     };
   }
 
-  async updateCardStatus(cardId: string, status: 'ACTIVE' | 'FROZEN' | 'CLOSED'): Promise<{ cardId: string; status: 'ACTIVE' | 'FROZEN' | 'CLOSED' }> {
+  async updateCardStatus(cardId: string, status: 'ACTIVE' | 'FROZEN' | 'CLOSED'): Promise<{ cardId: string; status: 'ACTIVE' | 'FROZEN' | 'CLOSED'; isSimulated?: boolean }> {
     this.cardStatuses.set(cardId, status);
     try {
       await this.client.updateCard(cardId, status);
-    } catch {
-      // Fallback in sandbox mode without card record in Airwallex DB
+    } catch (error) {
+      if (!isIssuingNotEnabledError(error) && !cardId.startsWith('sim_')) throw error;
+      logSimulatedFallback('card freeze status update', error);
+      return { cardId, status, isSimulated: true };
     }
     return { cardId, status };
   }
@@ -217,7 +259,10 @@ export class LiveGateway implements AirwallexGateway {
         airwallexTransactionId,
         failureReason: normalized.reason,
       };
-    } catch {
+    } catch (error) {
+      if (!isIssuingNotEnabledError(error)) throw error;
+      logSimulatedFallback('authorization simulation', error);
+
       const txId = `tx_awx_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
       const cardStatus = this.cardStatuses.get(input.cardId);
 
@@ -228,15 +273,17 @@ export class LiveGateway implements AirwallexGateway {
           failureReason: 'CARD_FROZEN',
           reason: 'CARD_FROZEN',
           airwallexTransactionId: txId,
+          isSimulated: true,
         };
       }
-      if (input.currency !== 'USD') {
+      if (input.currency !== env.WALLET_CURRENCY) {
         return {
           accepted: false,
           sourceStatus: 'DECLINED',
           failureReason: 'CURRENCY_NOT_ALLOWED',
           reason: 'CURRENCY_NOT_ALLOWED',
           airwallexTransactionId: txId,
+          isSimulated: true,
         };
       }
       if (input.mcc === '5812' || (input.mcc !== '5734' && input.mcc !== '7372' && input.mcc !== '4816')) {
@@ -246,6 +293,7 @@ export class LiveGateway implements AirwallexGateway {
           failureReason: 'MCC_NOT_ALLOWED',
           reason: 'MCC_NOT_ALLOWED',
           airwallexTransactionId: txId,
+          isSimulated: true,
         };
       }
       if (input.amountMinor > 50000) {
@@ -255,6 +303,7 @@ export class LiveGateway implements AirwallexGateway {
           failureReason: 'TRANSACTION_LIMIT_EXCEEDED',
           reason: 'TRANSACTION_LIMIT_EXCEEDED',
           airwallexTransactionId: txId,
+          isSimulated: true,
         };
       }
 
@@ -262,6 +311,7 @@ export class LiveGateway implements AirwallexGateway {
         accepted: true,
         sourceStatus: 'CLEARING',
         airwallexTransactionId: txId,
+        isSimulated: true,
       };
     }
   }
@@ -277,7 +327,7 @@ export class LiveGateway implements AirwallexGateway {
       id: String(item.card_transaction_id ?? item.id ?? randomUUID()),
       cardId: String(item.card_id ?? cardId ?? ''),
       amountMinor: Math.round(Number(item.transaction_amount ?? item.amount ?? 0) * 100),
-      currency: String(item.transaction_currency ?? item.currency ?? 'USD'),
+      currency: String(item.transaction_currency ?? item.currency ?? env.WALLET_CURRENCY),
       status: String(item.status ?? item.type ?? 'UNKNOWN'),
       createdAt: String(item.created_at ?? new Date().toISOString()),
       merchantName: (item.merchant_info ?? item.merchant_name) as string | undefined,
@@ -286,12 +336,12 @@ export class LiveGateway implements AirwallexGateway {
   }
 
   async getFundedBalance(): Promise<{ currency: string; availableMinor: number; totalMinor: number } | undefined> {
-    const res = await this.client.getCurrentBalance('USD');
+    const res = await this.client.getCurrentBalance(env.WALLET_CURRENCY);
     if (!res) return undefined;
     const available = Number(res.available_amount ?? 0);
     const total = Number(res.total_amount ?? available);
     return {
-      currency: res.currency ?? 'USD',
+      currency: res.currency ?? env.WALLET_CURRENCY,
       availableMinor: Math.round(available * 100),
       totalMinor: Math.round(total * 100),
     };
@@ -354,8 +404,8 @@ export class MockGateway implements AirwallexGateway {
     if (card.status !== 'ACTIVE') {
       return { accepted: false, sourceStatus: 'DECLINED', failureReason: `CARD_${card.status}`, airwallexTransactionId: txId };
     }
-    if (input.currency !== 'USD') {
-      return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'CURRENCY_NOT_ALLOWED', airwallexTransactionId: txId };
+    if (input.currency !== env.WALLET_CURRENCY) {
+      return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'CURRENCY_NOT_ALLOWED', airwallexTransactionId: txId, isSimulated: true };
     }
     if (input.amountMinor > card.limitMinor || input.amountMinor > card.remainingMinor) {
       return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'TRANSACTION_LIMIT_EXCEEDED', airwallexTransactionId: txId };
@@ -389,7 +439,7 @@ export class MockGateway implements AirwallexGateway {
   }
 
   async getFundedBalance(): Promise<{ currency: string; availableMinor: number; totalMinor: number }> {
-    return { currency: 'USD', availableMinor: 2500000, totalMinor: 2500000 };
+    return { currency: env.WALLET_CURRENCY, availableMinor: 2500000, totalMinor: 2500000 };
   }
 }
 
