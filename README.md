@@ -9,7 +9,7 @@ IntentLock is a security-focused prototype for AI-assisted procurement. The AI m
 - Blocks unsafe or tampered spend with fail-closed policy checks.
 - Issues sandboxed virtual cards and enforces merchant, MCC, currency, and transaction limits.
 - Shows real-time event streams scoped to each authenticated user, with admins seeing all events.
-- Keeps an append-only audit trail with a hash chain so records can be verified.
+- Keeps an append-only in-memory audit trail with a hash chain that can be verified. MongoDB-backed audit records are not yet chained.
 
 ## Architecture
 
@@ -140,7 +140,7 @@ This project intentionally demonstrates fail-closed and least-privilege behavior
 - NoSQL-style payload sanitization
 - webhook signature verification
 - encrypted backup support
-- append-only audit logging with hash-chain verification
+- append-only in-memory audit logging with hash-chain verification (MongoDB-backed audit records are not yet chained)
 
 See [SECURITY.md](SECURITY.md) for reporting and disclosure guidance.
 
