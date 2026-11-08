@@ -16,8 +16,7 @@ An intent-bound purchase agent for the **Airwallex Agentic Banking Hackathon, Tr
 
 | | |
 |---|---|
-| **Demo video** | https://drive.google.com/drive/folders/1fE3FH2wwShLDz8qEH54GF2qSnDNtPZgW?usp=sharing |
-| **Live demo** | _add link here (optional)_ |
+| **Demo video** | https://youtu.be/O0X9ScKVNW0 |
 | **Repository** | https://github.com/zeeshansaeed6/IntentLock |
 
 ---
