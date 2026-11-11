@@ -12,6 +12,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Dev server only: lets cloud previews and tunnels (non-localhost hostnames) reach it.
+    allowedHosts: true,
     proxy: { '/api': 'http://localhost:4100' },
   },
 });
