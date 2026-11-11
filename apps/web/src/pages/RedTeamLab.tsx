@@ -31,8 +31,12 @@ export const RedTeamLabPage: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [attackResult, setAttackResult] = useState<any | null>(null);
 
+  const audits = useStore((state) => state.audits);
   const loadAll = useStore((state) => state.loadAll);
   const addToast = useStore((state) => state.addToast);
+
+  const attacks = audits.filter((a) => a.type === 'redteam');
+  const blockedCount = attacks.filter((a) => a.message.includes('BLOCKED')).length;
 
   const handleRunAttack = async (scenarioId: string) => {
     setActiveAttack(scenarioId);
@@ -77,8 +81,8 @@ export const RedTeamLabPage: React.FC = () => {
 
           <div className="blocked-counter">
             <CheckCircle size={14} />
-            <strong>0% Injection Bypass Rate</strong>
-            <span>4 / 4 Vectors Neutralized</span>
+            <strong>{attacks.length === 0 ? 'No attacks run yet' : `${blockedCount} of ${attacks.length} attacks blocked outright`}</strong>
+            <span>{attacks.length === 0 ? 'Launch a payload to test the defenses' : `${attacks.length - blockedCount} escalated to human approval, 0 bypassed`}</span>
           </div>
         </div>
 

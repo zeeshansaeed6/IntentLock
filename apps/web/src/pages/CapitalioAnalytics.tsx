@@ -29,12 +29,29 @@ function CapitalioAnalyticsInner() {
   const { period, setPeriod } = useDashboardNavigation();
   const [activeTab, setActiveTab] = useState<'overview' | 'analytics'>('overview');
   const addToast = useStore((state) => state.addToast);
+  const company = useStore((state) => state.company);
+  const intents = useStore((state) => state.intents);
+  const cards = useStore((state) => state.cards);
+  const transactions = useStore((state) => state.transactions);
 
   const selectedPeriod =
     dashboardPeriods.find((p) => p.value === period) ?? dashboardPeriods[0];
 
   const handleExport = () => {
-    addToast('Exporting Treasury Intelligence Report (CSV/JSON)...', 'green');
+    const report = {
+      generatedAt: new Date().toISOString(),
+      company,
+      contracts: intents.map((i) => ({ intent_id: i.contract.intent_id, state: i.contract.state, decision: i.contract.decision, merchant: i.contract.merchant.name, max_total_minor: i.contract.max_total_minor, currency: i.contract.currency })),
+      cards: cards.map((c) => ({ id: c.id, status: c.status, limitMinor: c.limitMinor, remainingMinor: c.remainingMinor })),
+      transactions: transactions.map((t) => ({ id: t.id, merchant: t.merchant, amountMinor: t.amountMinor, currency: t.currency, outcome: t.outcome, reason: t.reason })),
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `intentlock-treasury-report-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast('Treasury report downloaded', 'green');
   };
 
   return (
@@ -51,7 +68,7 @@ function CapitalioAnalyticsInner() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 4, marginBottom: 4 }}>
             <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.8px', color: '#ffffff' }}>
-              Treasury & Portfolio Intelligence
+              Treasury Analytics
             </h1>
             <span
               style={{
@@ -66,11 +83,11 @@ function CapitalioAnalyticsInner() {
                 alignItems: 'center',
               }}
             >
-              Powered by Capitalio Engine
+              Charts below use illustrative sample data
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Real-time asset allocation, risk-adjusted returns, and autonomous liquidity insights.
+            Cash runway and spend analytics. The live runway and policy numbers are on the Command Center.
           </p>
         </div>
 
