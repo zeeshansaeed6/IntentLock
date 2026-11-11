@@ -16,5 +16,10 @@ export default defineConfig({
     allowedHosts: true,
     proxy: { '/api': 'http://localhost:4100' },
   },
+  preview: {
+    port: 5173,
+    allowedHosts: true,
+    proxy: { '/api': 'http://localhost:4100' },
+  },
 });
 
