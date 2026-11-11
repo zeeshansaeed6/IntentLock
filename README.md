@@ -149,8 +149,11 @@ IntentLock runs in two modes, set by `DEMO_MODE`.
 | `/intents` | Intents | Every signed contract, approval inbox, and the **Tamper Test** that flips a field and shows the signature check failing. |
 | `/cards` | Cards | Virtual card visuals (masked number, limit, remaining, status, badges) with Freeze and Unfreeze. |
 | `/transactions` | Transactions | Ledger of cleared and declined authorizations with the exact decline reason, plus a reconcile button. |
-| `/audit` | Audit Trail | Append-only, hash-chained log of proposals, approvals, card events and anomalies. |
+| `/audit` | Audit Trail | Append-only, hash-chained log of proposals, approvals, card events and anomalies, with search, severity filters and JSON export. |
 | `/redteam` | Red-Team Lab | Adversarial scenarios: hostile vendor documents, limit-inflation and MCC-evasion attempts, shown being blocked. |
+| `/settings` | Settings | Runtime mode, Airwallex connection, policy snapshot, demo reset. |
+
+**Keyboard shortcuts** (press `?` in the app): `/` focuses the intent box; `g` then `c`, `a`, `i`, `k`, `t`, `u`, `r` or `s` jumps to Command Center, Analytics, Intents, Cards, Transactions, Audit, Red-Team or Settings. Pending contracts can be approved or rejected, and active ones revoked (which freezes the card), from the Intents page. The console shows a banner if the API becomes unreachable.
 
 ---
 
@@ -483,6 +486,7 @@ IntentLock/
 - **USD policy.** The sandbox policy currently allows USD only. Using another wallet currency also needs the policy allowlist updated.
 - **Default data store is in memory.** State resets on restart unless MongoDB is configured. The audit hash chain is verified in the in-memory store; MongoDB audit records are not yet chained.
 - **Scripted LLM by default,** so the demo is deterministic. Real model providers are optional.
+- **No light theme.** The console is dark-only.
 - **No remote authorization.** Airwallex real-time remote authorization is not implemented.
 
 **Roadmap**
