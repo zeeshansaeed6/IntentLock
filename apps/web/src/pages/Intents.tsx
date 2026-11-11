@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, Ban } from 'lucide-react';
 import { useStore } from '../state/useStore';
-import { approveIntentApi } from '../lib/api';
+import { approveIntentApi, rejectIntentApi, revokeIntentApi } from '../lib/api';
 import { ContractViewer } from '../components/ContractViewer';
 import { EmptyState } from '../components/EmptyState';
 import { Button } from '../components/Button';
@@ -21,6 +21,17 @@ export const IntentsPage: React.FC = () => {
       await loadAll();
     } catch (e) {
       addToast(e instanceof Error ? e.message : 'Approval failed', 'rose');
+    }
+  };
+
+  const handleLifecycle = async (intentId: string, action: 'reject' | 'revoke') => {
+    if (action === 'revoke' && !window.confirm('Revoke this contract and freeze its card? This cannot be undone.')) return;
+    try {
+      await (action === 'revoke' ? revokeIntentApi(intentId) : rejectIntentApi(intentId));
+      addToast(action === 'revoke' ? 'Contract revoked · card frozen' : 'Contract rejected · no card issued', 'amber');
+      await loadAll();
+    } catch (e) {
+      addToast(e instanceof Error ? e.message : `Could not ${action}`, 'rose');
     }
   };
 
@@ -65,6 +76,18 @@ export const IntentsPage: React.FC = () => {
                 contract={item.contract}
                 onApprove={handleApprove}
               />
+              {(item.contract.state === 'PENDING_APPROVAL' || item.contract.state === 'ACTIVE') && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={<Ban size={13} />}
+                    onClick={() => handleLifecycle(item.contract.intent_id, item.contract.state === 'ACTIVE' ? 'revoke' : 'reject')}
+                  >
+                    {item.contract.state === 'ACTIVE' ? 'Revoke & freeze card' : 'Reject'}
+                  </Button>
+                </div>
+              )}
             </motion.div>
           ))}
         </div>

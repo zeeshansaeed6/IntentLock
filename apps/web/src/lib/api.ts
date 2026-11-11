@@ -136,6 +136,18 @@ export async function approveIntentApi(intentId: string, expectedSignature?: str
   return res.json();
 }
 
+async function intentAction(intentId: string, action: 'reject' | 'revoke'): Promise<IntentItem> {
+  const res = await fetch(`${API_BASE}/api/intents/${intentId}/${action}`, { method: 'POST', credentials: 'include' });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `Could not ${action} intent`);
+  }
+  return res.json();
+}
+
+export const rejectIntentApi = (intentId: string) => intentAction(intentId, 'reject');
+export const revokeIntentApi = (intentId: string) => intentAction(intentId, 'revoke');
+
 export async function fetchCards(): Promise<CardItem[]> {
   const res = await fetch(`${API_BASE}/api/cards`, { credentials: 'include' });
   if (!res.ok) throw new Error(`Fetch cards failed: ${res.statusText}`);

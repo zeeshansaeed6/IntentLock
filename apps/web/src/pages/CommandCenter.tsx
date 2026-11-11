@@ -86,6 +86,7 @@ export const CommandCenterPage: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <div className="intent-input">
             <input
+              id="intent-input"
               type="text"
               value={requestText}
               onChange={(e) => setRequestText(e.target.value)}
