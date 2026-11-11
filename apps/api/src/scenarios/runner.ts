@@ -192,11 +192,19 @@ export async function runScenario(name: ScenarioName, options: { attack?: RedTea
     old.record.contract = { ...old.record.contract, state: 'FROZEN' };
     emit('revise', 'Price-hike information received', 'Old card frozen before a new contract is issued.', 'amber', { oldCardId: old.card.id });
     const replacement = await createIntent('The vendor raised the price. Re-evaluate the monthly design plan.');
-    emit('reconcile', 'Replacement contract active', `Issued a new bounded card under ${replacement.contract.intent_id}.`, 'green');
+    const reissued = replacement.contract.state !== 'DRAFT';
+    emit(
+      'reconcile',
+      reissued ? 'Replacement contract active' : 'Revised decision: defer',
+      reissued
+        ? `Issued a new bounded card under ${replacement.contract.intent_id}.`
+        : `The price hike makes the plan unaffordable against the reserve floor. Decision revised from ${old.record.contract.decision} to ${replacement.contract.decision}; reconsider on ${replacement.contract.reconsider_on.slice(0, 10)}. No new card issued.`,
+      reissued ? 'green' : 'amber',
+    );
     const replacementCard = store.cards.find((item) => item.intentId === replacement.contract.intent_id);
     const priceHikeSimulated = Boolean(old.card.isSimulated || replacementCard?.isSimulated);
     isSimulated = isSimulated || priceHikeSimulated;
-    outcomes.push({ oldCardId: old.card.id, newIntentId: replacement.contract.intent_id, isSimulated: priceHikeSimulated });
+    outcomes.push({ oldCardId: old.card.id, newIntentId: replacement.contract.intent_id, previousDecision: old.record.contract.decision, revisedDecision: replacement.contract.decision, isSimulated: priceHikeSimulated });
   }
   return { name, isSimulated, outcomes, transactions: store.transactions.slice(0, 12), audit: store.audit.slice(0, 20) };
 }

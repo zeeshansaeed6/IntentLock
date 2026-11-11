@@ -1,5 +1,10 @@
 export type WeeklyCash = { inflowMinor: number; outflowMinor: number };
 export type VendorTerms = { monthlyPriceMinor: number; annualPriceMinor: number; monthlyChargeWeeks?: number[] };
+/** Vendor terms for the synthetic design-tool plan used in the hero scenario. */
+export const DEFAULT_SAAS_TERMS: VendorTerms = { monthlyPriceMinor: 30000, annualPriceMinor: 500000 };
+/** Same vendor after the mid-run price-hike email (+50%). */
+export const HIKED_SAAS_TERMS: VendorTerms = { monthlyPriceMinor: 45000, annualPriceMinor: 750000 };
+
 export type Projection = { option: 'monthly' | 'annual'; balancesMinor: number[]; breachWeek: number | null; minimumBalanceMinor: number };
 export type TreasuryDecision = { monthly: Projection; annual: Projection; recommendation: 'monthly' | 'annual' | 'defer'; reasons: string[] };
 

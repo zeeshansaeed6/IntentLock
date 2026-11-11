@@ -9,7 +9,6 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@base-ui/react": "^1.9.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^4.7.0",
     "clsx": "^2.1.1",

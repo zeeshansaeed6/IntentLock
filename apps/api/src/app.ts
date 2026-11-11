@@ -15,6 +15,7 @@ import { processWebhook } from './integrations/airwallex/webhooks.js';
 import { getGateway } from './integrations/airwallex/gateway.js';
 import { getRepository } from './store/repository.js';
 import { getCompanyConfig } from './seed/loader.js';
+import { decideTreasury, DEFAULT_SAAS_TERMS } from './domain/treasury/engine.js';
 import {
   authMiddleware,
   requireAuth,
@@ -488,7 +489,16 @@ app.get('/api/audit', (req: AuthenticatedRequest, res) => {
   return res.json(scoped);
 });
 
-app.get('/api/company', (_req, res) => res.json(getCompanyConfig()));
+app.get('/api/company', (_req, res) => {
+  const company = getCompanyConfig();
+  const projection = decideTreasury({
+    currentBalanceMinor: company.currentBalanceMinor,
+    reserveFloorMinor: company.reserveFloorMinor,
+    weeks: company.weeks.map((w) => ({ inflowMinor: w.inflowMinor, outflowMinor: w.outflowMinor })),
+    terms: DEFAULT_SAAS_TERMS,
+  });
+  return res.json({ ...company, vendorTerms: DEFAULT_SAAS_TERMS, projection });
+});
 
 app.get('/api/stream', requireAuth, (req: AuthenticatedRequest, res) => {
   res.status(200).set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });

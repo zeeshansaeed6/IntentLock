@@ -18,40 +18,22 @@ export interface RunwayChartProps {
 }
 
 export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
-  const initialBalance = company?.currentBalanceMinor ?? 2100000;
-  const reserveFloor = company?.reserveFloorMinor ?? 1200000;
-  const inflows = company?.weeks?.map((w) => w.inflowMinor) ?? [240000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-  const outflows = company?.weeks?.map((w) => w.outflowMinor) ?? [80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000, 80000];
+  // Plots the deterministic treasury engine's projection; the browser does no cash math of its own.
+  const reserveFloor = company?.reserveFloorMinor ?? 0;
+  const projection = company?.projection;
+  const breachWeek = projection?.annual.breachWeek ?? null;
+  const breachValue = breachWeek && projection ? projection.annual.balancesMinor[breachWeek - 1] : null;
 
-  const monthlyCostMinor = 5000; // $50/month
-  const annualCostMinor = 50000; // $500 upfront in week 1
-
-  let balMonthly = initialBalance;
-  let balAnnual = initialBalance - annualCostMinor;
-
-  let breachWeek: number | null = null;
-  let breachValue: number | null = null;
-
-  const data = Array.from({ length: 12 }, (_, i) => {
-    const weekNum = i + 1;
-    const netFlow = (inflows[i] ?? 200000) - (outflows[i] ?? 230000);
-
-    balMonthly += netFlow - monthlyCostMinor;
-    balAnnual += netFlow;
-
-    if (balAnnual < reserveFloor && breachWeek === null) {
-      breachWeek = weekNum;
-      breachValue = balAnnual;
-    }
-
-    return {
-      week: `W${weekNum}`,
-      weekNum,
-      Monthly: Math.round(balMonthly / 100),
-      Annual: Math.round(balAnnual / 100),
-      ReserveFloor: Math.round(reserveFloor / 100),
-    };
-  });
+  const data = (projection?.monthly.balancesMinor ?? []).map((monthly, i) => ({
+    week: `W${i + 1}`,
+    weekNum: i + 1,
+    Monthly: Math.round(monthly / 100),
+    Annual: Math.round((projection?.annual.balancesMinor[i] ?? 0) / 100),
+    ReserveFloor: Math.round(reserveFloor / 100),
+  }));
+  const dollars = (minor?: number) => (minor === undefined ? '' : `$${Math.round(minor / 100).toLocaleString()}`);
+  const monthlyLabel = company?.vendorTerms ? `Monthly (${dollars(company.vendorTerms.monthlyPriceMinor)}/mo)` : 'Monthly';
+  const annualLabel = company?.vendorTerms ? `Annual (${dollars(company.vendorTerms.annualPriceMinor)} upfront)` : 'Annual';
 
   const reserveFloorDollars = Math.round(reserveFloor / 100);
 
@@ -65,11 +47,11 @@ export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
         <div style={{ display: 'flex', gap: 14, fontSize: 10, alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 12, height: 2, background: 'var(--chart-4, #00DA92)', display: 'inline-block', borderRadius: 1 }} />
-            <span style={{ color: '#94a3b8' }}>Monthly ($50/mo)</span>
+            <span style={{ color: '#94a3b8' }}>{monthlyLabel}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 12, height: 2, background: 'var(--chart-2, #7466F6)', borderTop: '1px dashed var(--chart-2, #7466F6)', display: 'inline-block' }} />
-            <span style={{ color: '#94a3b8' }}>Annual ($500 upfront)</span>
+            <span style={{ color: '#94a3b8' }}>{annualLabel}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 12, height: 1, background: 'var(--chart-3, #FF7A00)', display: 'inline-block' }} />
@@ -157,10 +139,10 @@ export const RunwayChart: React.FC<RunwayChartProps> = ({ company }) => {
         }}
       >
         <div style={{ color: '#6ee7b7' }}>
-          <strong>Treasury Intelligence:</strong> Annual billing breaches the $12,000 reserve floor at Week {breachWeek ?? 6}.
+          <strong>Treasury Intelligence:</strong> {projection ? projection.reasons[0] : 'Waiting for the treasury projection…'}
         </div>
         <div style={{ color: '#22d3ee', fontFamily: 'JetBrains Mono', fontWeight: 600 }}>
-          RECOMMENDATION: MONTHLY
+          RECOMMENDATION: {(projection?.recommendation ?? '—').toUpperCase()}
         </div>
       </div>
     </div>

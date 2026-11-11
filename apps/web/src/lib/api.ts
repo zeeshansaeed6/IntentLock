@@ -77,6 +77,13 @@ export type CompanyConfig = {
   departmentBudgetRemainingMinor: number;
   approvalThresholdMinor: number;
   weeks: Array<{ week: number; inflowMinor: number; outflowMinor: number }>;
+  vendorTerms?: { monthlyPriceMinor: number; annualPriceMinor: number };
+  projection?: {
+    monthly: { balancesMinor: number[]; breachWeek: number | null; minimumBalanceMinor: number };
+    annual: { balancesMinor: number[]; breachWeek: number | null; minimumBalanceMinor: number };
+    recommendation: 'monthly' | 'annual' | 'defer';
+    reasons: string[];
+  };
 };
 
 export type UserItem = {

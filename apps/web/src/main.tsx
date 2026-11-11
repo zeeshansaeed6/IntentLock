@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './styles.css';
 import './console.css';
-import './components/dashboards/capitalio-dashboard/dashboard.css';
+import './tokens.css';
 
 
 createRoot(document.getElementById('root')!).render(
