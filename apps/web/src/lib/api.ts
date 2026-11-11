@@ -187,10 +187,12 @@ export async function fetchAudit(): Promise<AuditItem[]> {
   return res.json();
 }
 
-export async function triggerScenario(name: string): Promise<ScenarioResult> {
+export async function triggerScenario(name: string, attack?: string): Promise<ScenarioResult> {
   const res = await fetch(`${API_BASE}/api/scenarios/${name}/run`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
+    body: JSON.stringify(attack ? { attack } : {}),
   });
   if (!res.ok) throw new Error(`Scenario run failed`);
   return res.json();

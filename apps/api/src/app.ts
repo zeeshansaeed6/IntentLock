@@ -10,7 +10,7 @@ import { logger, maskSecrets } from './config/logger.js';
 import { approveIntent, createIntent, rejectIntent, revokeIntent } from './agent/graph.js';
 import { eventBus } from './agent/events.js';
 import { store } from './store/memory.js';
-import { runScenario, type ScenarioName } from './scenarios/runner.js';
+import { runScenario, RED_TEAM_ATTACKS, type ScenarioName } from './scenarios/runner.js';
 import { processWebhook } from './integrations/airwallex/webhooks.js';
 import { getGateway } from './integrations/airwallex/gateway.js';
 import { getRepository } from './store/repository.js';
@@ -356,7 +356,9 @@ app.post('/api/scenarios/:name/run', expensiveLimiter, (req: AuthenticatedReques
   const allowed = ['pass', 'limit', 'mcc', 'currency', 'redteam', 'pricehike', 'judge'];
   const scenarioName = String(req.params.name);
   if (!allowed.includes(scenarioName)) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Unknown scenario.' } });
-  const result = await runScenario(scenarioName as ScenarioName);
+  const attack = z.enum(RED_TEAM_ATTACKS).optional().safeParse(req.body?.attack);
+  if (!attack.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: `attack must be one of: ${RED_TEAM_ATTACKS.join(', ')}.` } });
+  const result = await runScenario(scenarioName as ScenarioName, { attack: attack.data });
   return res.status(202).json(result);
 });
 
