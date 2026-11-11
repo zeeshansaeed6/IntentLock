@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { env } from './config/env.js';
 import { logger, maskSecrets } from './config/logger.js';
-import { approveIntent, createIntent } from './agent/graph.js';
+import { approveIntent, createIntent, rejectIntent, revokeIntent } from './agent/graph.js';
 import { eventBus } from './agent/events.js';
 import { store } from './store/memory.js';
 import { runScenario, type ScenarioName } from './scenarios/runner.js';
@@ -293,6 +293,39 @@ app.post('/api/intents/:id/approve', async (req: AuthenticatedRequest, res) => {
         message: err instanceof Error ? err.message : 'Approval failed.',
       },
     });
+  }
+});
+
+function ownedIntent(req: AuthenticatedRequest, res: express.Response) {
+  const record = store.intents.find((i) => i.contract.intent_id === String(req.params.id));
+  if (!record) {
+    res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Intent not found.' } });
+    return undefined;
+  }
+  if (req.user?.role !== 'admin' && record.owner_id && record.owner_id !== req.user?.id) {
+    res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You are not authorized to modify this intent.' } });
+    return undefined;
+  }
+  return record;
+}
+
+app.post('/api/intents/:id/reject', async (req: AuthenticatedRequest, res) => {
+  if (!ownedIntent(req, res)) return;
+  const record = await rejectIntent(String(req.params.id));
+  return record
+    ? res.json(record)
+    : res.status(409).json({ error: { code: 'INVALID_STATE', message: 'Intent is not awaiting approval.' } });
+});
+
+app.post('/api/intents/:id/revoke', async (req: AuthenticatedRequest, res) => {
+  if (!ownedIntent(req, res)) return;
+  try {
+    const record = await revokeIntent(String(req.params.id));
+    return record
+      ? res.json(record)
+      : res.status(409).json({ error: { code: 'INVALID_STATE', message: 'Intent is already revoked or completed.' } });
+  } catch {
+    return res.status(502).json({ error: { code: 'GATEWAY_ERROR', message: 'Could not freeze the card; contract left unrevoked is unsafe, retry.' } });
   }
 });
 

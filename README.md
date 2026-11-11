@@ -378,6 +378,8 @@ Run from the repository root.
 | `GET` | `/api/intents` | Session | List the caller's intents. |
 | `GET` | `/api/intents/:id` | Session (owner or admin) | Get one intent. |
 | `POST` | `/api/intents/:id/approve` | Session (owner or admin) | Approve, bound to the contract's `expectedSignature`. |
+| `POST` | `/api/intents/:id/reject` | Session (owner or admin) | Decline a pending contract; no card is ever issued. |
+| `POST` | `/api/intents/:id/revoke` | Session (owner or admin) | Kill switch: revoke the contract and freeze its card. |
 | `GET` | `/api/cards` | Session | List the caller's cards. |
 | `POST` | `/api/cards/:id/freeze` | Session (owner or admin) | Freeze or unfreeze a card. |
 | `GET` | `/api/transactions` | Session | List the caller's transactions. |
