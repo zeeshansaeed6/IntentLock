@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadEnvConfig } from './env.js';
+import { loadEnvConfig, isRealCredential } from './env.js';
 
 describe('Environment Configuration & Security Invariants', () => {
   it('generates random INTENT_HMAC_SECRET and ADMIN_INITIAL_PASSWORD in development if not provided', () => {
@@ -60,5 +60,14 @@ describe('Environment Configuration & Security Invariants', () => {
     expect(config.NODE_ENV).toBe('production');
     expect(config.INTENT_HMAC_SECRET).toBe('production-intent-hmac-secret-at-least-32-bytes!');
     expect(config.ADMIN_INITIAL_PASSWORD).toBe('production-admin-initial-password-secure!');
+  });
+});
+
+describe('isRealCredential', () => {
+  it('rejects empty values and .env.example placeholders', () => {
+    expect(isRealCredential(undefined)).toBe(false);
+    expect(isRealCredential('  ')).toBe(false);
+    expect(isRealCredential('your_airwallex_api_key_here')).toBe(false);
+    expect(isRealCredential('abc123realkey')).toBe(true);
   });
 });

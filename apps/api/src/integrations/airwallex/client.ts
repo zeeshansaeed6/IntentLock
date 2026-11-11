@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { env } from '../../config/env.js';
+import { env, isRealCredential } from '../../config/env.js';
 import { airwallexQueue } from './queue.js';
 import { buildCardholderPayload, buildIssuingSimulationPayload, buildVirtualCardPayload, type CardControls } from './payloads.js';
 
@@ -28,7 +28,7 @@ export class AirwallexClient {
   constructor(private readonly baseUrl = env.AIRWALLEX_BASE_URL) {}
 
   get configured(): boolean {
-    return Boolean(env.AIRWALLEX_CLIENT_ID && env.AIRWALLEX_API_KEY);
+    return isRealCredential(env.AIRWALLEX_CLIENT_ID) && isRealCredential(env.AIRWALLEX_API_KEY);
   }
 
   async login(): Promise<string> {

@@ -146,7 +146,7 @@ app.get('/api/health', async (_req, res) => {
     status: 'ok',
     service: 'intentlock-api',
     mode: env.DEMO_MODE,
-    airwallex: env.AIRWALLEX_CLIENT_ID && env.AIRWALLEX_API_KEY ? 'sandbox' : 'not_configured',
+    airwallex: getGateway().mode === 'live' ? 'sandbox' : 'not_configured',
     ...(fundedBalance ? { fundedBalance } : {}),
   });
 });
