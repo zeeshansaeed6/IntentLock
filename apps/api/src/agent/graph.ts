@@ -143,3 +143,26 @@ export async function approveIntent(intentId: string, expectedSignature?: string
   await issueCard(record);
   return record;
 }
+
+/** Human declines a pending contract. No card is ever issued for it. */
+export async function rejectIntent(intentId: string): Promise<IntentRecord | undefined> {
+  const record = store.intents.find((item) => item.contract.intent_id === intentId);
+  if (!record || record.contract.state !== 'PENDING_APPROVAL') return undefined;
+  record.contract = { ...record.contract, state: 'REVOKED' };
+  emit('approval', 'Human rejected the contract', 'No card was issued. The contract is void.', 'rose', { intentId }, record.owner_id);
+  return record;
+}
+
+/** Kill switch: revoke the contract and freeze its card (fail closed if the freeze cannot be confirmed by the caller). */
+export async function revokeIntent(intentId: string): Promise<IntentRecord | undefined> {
+  const record = store.intents.find((item) => item.contract.intent_id === intentId);
+  if (!record || record.contract.state === 'REVOKED' || record.contract.state === 'COMPLETED') return undefined;
+  record.contract = { ...record.contract, state: 'REVOKED' };
+  const card = store.cards.find((item) => item.intentId === intentId);
+  if (card && card.status === 'ACTIVE') {
+    await getGateway().updateCardStatus(card.airwallexCardId ?? card.id, 'FROZEN');
+    card.status = 'FROZEN';
+  }
+  emit('revoke', 'Contract revoked', card ? `Card ${card.id} frozen; the contract can no longer authorize spend.` : 'Contract revoked before any card was issued.', 'rose', { intentId }, record.owner_id);
+  return record;
+}

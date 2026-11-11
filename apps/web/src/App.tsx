@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   BrainCircuit,
@@ -15,6 +15,8 @@ import {
   Shield,
   Activity,
   TrendingUp,
+  Settings as SettingsIcon,
+  WifiOff,
 } from 'lucide-react';
 import { useStore } from './state/useStore';
 import { useSSE } from './lib/useSSE';
@@ -31,6 +33,9 @@ import { CardsPage } from './pages/Cards';
 import { TransactionsPage } from './pages/Transactions';
 import { AuditPage } from './pages/Audit';
 import { RedTeamLabPage } from './pages/RedTeamLab';
+import { SettingsPage } from './pages/Settings';
+import { NotFoundPage } from './pages/NotFound';
+import { Shortcuts } from './components/Shortcuts';
 
 const NAV_ITEMS = [
   { label: 'Command Center', path: '/console', icon: LayoutDashboard },
@@ -40,6 +45,7 @@ const NAV_ITEMS = [
   { label: 'Transactions', path: '/transactions', icon: BarChart3 },
   { label: 'Audit Trail', path: '/audit', icon: FileCheck2 },
   { label: 'Red-Team Lab', path: '/redteam', icon: ShieldCheck },
+  { label: 'Settings', path: '/settings', icon: SettingsIcon },
 ];
 
 const ConsoleLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -52,6 +58,8 @@ const ConsoleLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const setJudge = useStore((state) => state.setJudge);
   const resetDemo = useStore((state) => state.resetDemo);
   const intents = useStore((state) => state.intents);
+  const loaded = useStore((state) => state.loaded);
+  const loadAll = useStore((state) => state.loadAll);
 
   const pendingCount = intents.filter((i) => i.contract.state === 'PENDING_APPROVAL').length;
   const currentNav = NAV_ITEMS.find((item) => item.path === location.pathname) ?? NAV_ITEMS[0];
@@ -182,6 +190,14 @@ const ConsoleLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
         </header>
 
+        {loaded && !health && (
+          <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px', background: 'rgba(244,63,94,0.12)', borderBottom: '1px solid rgba(244,63,94,0.35)', color: '#fecdd3', fontSize: 12 }}>
+            <WifiOff size={14} />
+            <span style={{ flex: 1 }}>API unreachable. Showing last known data; actions are paused until the connection returns.</span>
+            <button onClick={() => loadAll()} style={{ background: 'rgba(255,255,255,0.1)', color: 'inherit', padding: '4px 10px', borderRadius: 6, fontSize: 11 }}>Retry</button>
+          </div>
+        )}
+
         {/* Optional JudgeBar overlay */}
         {judge.isActive && <JudgeBar />}
 
@@ -285,8 +301,17 @@ export default function App() {
             </ConsoleLayout>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/settings"
+          element={
+            <ConsoleLayout>
+              <SettingsPage />
+            </ConsoleLayout>
+          }
+        />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <Shortcuts />
 
       {/* Global Modals & Notifications */}
       <ApprovalInbox />

@@ -60,3 +60,8 @@ export function loadEnvConfig(source: NodeJS.ProcessEnv = process.env): EnvConfi
 }
 
 export const env = loadEnvConfig(process.env);
+
+/** True when a credential is set to something other than an `.env.example` placeholder. */
+export function isRealCredential(value: string | undefined): boolean {
+  return Boolean(value && value.trim() && !/^your_.*_here$/i.test(value.trim()));
+}

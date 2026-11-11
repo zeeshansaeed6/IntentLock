@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ArrowLeftRight, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import { useStore } from '../state/useStore';
 import { reconcileTransactions } from '../lib/api';
@@ -14,6 +14,16 @@ export const TransactionsPage: React.FC = () => {
   const addToast = useStore((state) => state.addToast);
 
   const [isReconciling, setIsReconciling] = useState(false);
+  const [outcome, setOutcome] = useState<'ALL' | 'ALLOWED' | 'BLOCKED'>('ALL');
+  const [query, setQuery] = useState('');
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return transactions.filter(
+      (tx) => (outcome === 'ALL' || tx.outcome === outcome) && (!q || `${tx.merchant} ${tx.mcc} ${tx.reason ?? ''} ${tx.rawFailureReason ?? ''}`.toLowerCase().includes(q)),
+    );
+  }, [transactions, outcome, query]);
+  const allowedCount = transactions.filter((t) => t.outcome === 'ALLOWED').length;
 
   const handleReconcile = async () => {
     setIsReconciling(true);
@@ -59,6 +69,29 @@ export const TransactionsPage: React.FC = () => {
           detail="Run Judge Mode or submit an intent transaction to generate live simulation events."
         />
       ) : (
+        <>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+          <input
+            aria-label="Search transactions"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search merchant, MCC, reason…"
+            style={{ flex: '1 1 220px', padding: '8px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'inherit', font: 'inherit', fontSize: 13, outline: 0 }}
+          />
+          <div role="group" aria-label="Filter by outcome" style={{ display: 'flex', gap: 6 }}>
+            {(['ALL', 'ALLOWED', 'BLOCKED'] as const).map((o) => (
+              <button key={o} aria-pressed={outcome === o} onClick={() => setOutcome(o)}
+                style={{ padding: '6px 12px', borderRadius: 999, fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
+                  background: outcome === o ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${outcome === o ? 'rgba(129,140,248,0.6)' : 'rgba(255,255,255,0.08)'}`, color: outcome === o ? '#c7d2fe' : '#94a3b8' }}>
+                {o === 'ALL' ? `All (${transactions.length})` : o === 'ALLOWED' ? `Cleared (${allowedCount})` : `Blocked (${transactions.length - allowedCount})`}
+              </button>
+            ))}
+          </div>
+        </div>
+        {visible.length === 0 ? (
+          <EmptyState icon={<ArrowLeftRight size={24} />} title="No matching transactions" detail="Adjust the outcome filter or search term." />
+        ) : (
         <div className="table-panel">
           <div className="table-head">
             <span>MERCHANT & DETAILS</span>
@@ -67,7 +100,7 @@ export const TransactionsPage: React.FC = () => {
             <span>TIMESTAMP</span>
           </div>
 
-          {transactions.map((tx) => {
+          {visible.map((tx) => {
             const isAllowed = tx.outcome === 'ALLOWED';
             return (
               <div className="table-row" key={tx.id}>
@@ -98,6 +131,8 @@ export const TransactionsPage: React.FC = () => {
             );
           })}
         </div>
+        )}
+        </>
       )}
     </div>
   );

@@ -40,6 +40,9 @@ interface AppState {
   pendingApproval: IntentItem | null;
   judge: JudgeState;
   isLoading: boolean;
+  loaded: boolean;
+  shortcutsOpen: boolean;
+  setShortcutsOpen: (open: boolean) => void;
 
   // Actions
   loadAll: () => Promise<void>;
@@ -67,6 +70,9 @@ export const useStore = create<AppState>((set, get) => ({
     narration: 'Judge Mode ready to evaluate runtime enforcement.',
   },
   isLoading: false,
+  loaded: false,
+  shortcutsOpen: false,
+  setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
 
   loadAll: async () => {
     try {
@@ -79,6 +85,7 @@ export const useStore = create<AppState>((set, get) => ({
         fetchAudit().catch(() => []),
       ]);
       set({
+        loaded: true,
         health,
         company,
         intents,

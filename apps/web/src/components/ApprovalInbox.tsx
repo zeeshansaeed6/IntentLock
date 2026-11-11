@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle, XCircle, ShieldCheck, Fingerprint, ExternalLink } from 'lucide-react';
 import { useStore } from '../state/useStore';
-import { approveIntentApi } from '../lib/api';
+import { approveIntentApi, rejectIntentApi } from '../lib/api';
 import { formatMoney, truncateHash } from '../lib/formatters';
 import { Button } from './Button';
 
@@ -32,12 +32,29 @@ export const ApprovalInbox: React.FC = () => {
     }
   };
 
+  const handleReject = async () => {
+    setIsSubmitting(true);
+    try {
+      await rejectIntentApi(contract.intent_id);
+      addToast('Contract rejected · no card was issued', 'amber');
+      setPendingApproval(null);
+      await loadAll();
+    } catch (e) {
+      addToast(e instanceof Error ? e.message : 'Rejection failed', 'rose');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDismiss = () => {
     setPendingApproval(null);
   };
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Human approval required"
       style={{
         position: 'fixed',
         inset: 0,
@@ -142,6 +159,9 @@ export const ApprovalInbox: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
           <Button variant="ghost" size="md" onClick={handleDismiss} disabled={isSubmitting}>
             Review Later
+          </Button>
+          <Button variant="danger" size="md" onClick={handleReject} disabled={isSubmitting} icon={<XCircle size={16} />}>
+            Reject
           </Button>
           <Button
             variant="primary"
