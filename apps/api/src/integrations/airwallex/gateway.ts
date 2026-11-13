@@ -351,6 +351,8 @@ export class LiveGateway implements AirwallexGateway {
 export class MockGateway implements AirwallexGateway {
   readonly mode = 'mock' as const;
   private readonly mockCards = new Map<string, GatewayCardResult>();
+  /** Card controls as real Airwallex would hold them, built from the signed contract. */
+  private readonly mockControls = new Map<string, { allowedMcc: string[]; allowedCurrencies: string[] }>();
   private readonly mockTransactions: GatewayTransactionItem[] = [];
 
   async ensureFundedAccount(): Promise<{ globalAccountId: string; balanceMinor: number }> {
@@ -377,6 +379,7 @@ export class MockGateway implements AirwallexGateway {
       isSandbox: false,
     };
     this.mockCards.set(id, card);
+    this.mockControls.set(id, { allowedMcc: input.allowedMcc, allowedCurrencies: input.allowedCurrencies });
     return card;
   }
 
@@ -404,13 +407,15 @@ export class MockGateway implements AirwallexGateway {
     if (card.status !== 'ACTIVE') {
       return { accepted: false, sourceStatus: 'DECLINED', failureReason: `CARD_${card.status}`, airwallexTransactionId: txId };
     }
-    if (input.currency !== env.WALLET_CURRENCY) {
+    const controls = this.mockControls.get(input.cardId);
+    const currencyAllowed = controls ? controls.allowedCurrencies.includes(input.currency) : input.currency === env.WALLET_CURRENCY;
+    if (!currencyAllowed) {
       return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'CURRENCY_NOT_ALLOWED', airwallexTransactionId: txId };
     }
     if (input.amountMinor > card.limitMinor || input.amountMinor > card.remainingMinor) {
       return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'TRANSACTION_LIMIT_EXCEEDED', airwallexTransactionId: txId };
     }
-    if (input.mcc === '5812') {
+    if (controls && !controls.allowedMcc.includes(input.mcc)) {
       return { accepted: false, sourceStatus: 'DECLINED', failureReason: 'MCC_NOT_ALLOWED', airwallexTransactionId: txId };
     }
 

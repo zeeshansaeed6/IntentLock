@@ -72,4 +72,12 @@ describe('scripted scenarios', () => {
     expect(deferred.contract.max_total_minor).toBe(0);
     expect(store.cards.filter((c) => c.intentId === deferred.contract.intent_id)).toHaveLength(0);
   });
+
+  it('mock card controls agree with local enforcement, so no false anomalies are raised', async () => {
+    for (const attack of ['prompt_injection', 'limit_raise', 'mcc_evasion'] as const) {
+      store.reset();
+      await runScenario('redteam', { attack });
+      expect(store.audit.filter((a) => a.type === 'anomaly')).toHaveLength(0);
+    }
+  });
 });

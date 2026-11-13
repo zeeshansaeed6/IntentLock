@@ -18,26 +18,10 @@ const stamp = () => `${((Date.now() - started) / 1000).toFixed(0)}s`;
 
 /** Overlay injected on every page load: caption bar, section tag, highlight ring and a visible cursor. */
 const OVERLAY = () => {
-  const css = document.createElement('style');
-  css.textContent = `
-    #il-cap{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:2147483647;max-width:1020px;width:calc(100% - 80px);
-      padding:14px 22px;border-radius:16px;background:rgba(6,9,18,.9);border:1px solid rgba(99,102,241,.55);color:#f1f5f9;
-      font:600 21px/1.4 Manrope,system-ui,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.6);backdrop-filter:blur(10px);text-align:center;transition:opacity .25s}
-    #il-cap small{display:block;font:500 12px 'DM Mono',monospace;letter-spacing:.16em;color:#22d3ee;margin-bottom:5px;text-transform:uppercase}
-    #il-cur{position:fixed;z-index:2147483647;width:20px;height:20px;margin:-3px 0 0 -3px;border-radius:50%;pointer-events:none;
-      background:rgba(34,211,238,.35);border:2px solid #22d3ee;box-shadow:0 0 18px #22d3ee;transition:transform .08s}
-    .il-hl{outline:3px solid #fbbf24!important;outline-offset:4px;border-radius:12px;animation:il-p 1.2s ease-in-out infinite}
-    @keyframes il-p{50%{outline-color:#22d3ee}}`;
-  document.documentElement.appendChild(css);
-  const cap = document.createElement('div');
-  cap.id = 'il-cap';
-  cap.style.opacity = '0';
-  const cur = document.createElement('div');
-  cur.id = 'il-cur';
-  const mount = () => { document.body.append(cap, cur); };
-  if (document.body) mount(); else addEventListener('DOMContentLoaded', mount);
-  addEventListener('mousemove', (e) => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; }, true);
+  // The init script runs before <html>/<body> exist, so DOM work waits for the document.
   window.__say = (tag, text) => {
+    const cap = document.getElementById('il-cap');
+    if (!cap) return;
     cap.style.opacity = text ? '1' : '0';
     cap.innerHTML = text ? `<small>${tag}</small>${text}` : '';
   };
@@ -45,6 +29,28 @@ const OVERLAY = () => {
     document.querySelectorAll('.il-hl').forEach((el) => el.classList.remove('il-hl'));
     if (sel) document.querySelectorAll(sel).forEach((el) => el.classList.add('il-hl'));
   };
+  const setup = () => {
+    if (document.getElementById('il-cap')) return;
+    const css = document.createElement('style');
+    css.textContent = `
+      #il-cap{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:2147483647;max-width:1020px;width:calc(100% - 80px);
+        padding:14px 22px;border-radius:16px;background:rgba(6,9,18,.92);border:1px solid rgba(99,102,241,.55);color:#f1f5f9;
+        font:600 21px/1.4 Manrope,system-ui,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.6);text-align:center;transition:opacity .25s;opacity:0}
+      #il-cap small{display:block;font:500 12px 'DM Mono',monospace;letter-spacing:.16em;color:#22d3ee;margin-bottom:5px;text-transform:uppercase}
+      #il-cur{position:fixed;z-index:2147483647;width:20px;height:20px;margin:-3px 0 0 -3px;border-radius:50%;pointer-events:none;
+        background:rgba(34,211,238,.35);border:2px solid #22d3ee;box-shadow:0 0 18px #22d3ee}
+      .il-hl{outline:3px solid #fbbf24!important;outline-offset:4px;border-radius:12px;animation:il-p 1.2s ease-in-out infinite}
+      @keyframes il-p{50%{outline-color:#22d3ee}}`;
+    const cap = document.createElement('div');
+    cap.id = 'il-cap';
+    const cur = document.createElement('div');
+    cur.id = 'il-cur';
+    document.head.appendChild(css);
+    document.body.append(cap, cur);
+    addEventListener('mousemove', (e) => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; }, true);
+  };
+  if (document.readyState === 'loading') addEventListener('DOMContentLoaded', setup);
+  else setup();
 };
 
 const browser = await chromium.launch({ executablePath: chromiumPath, args: ['--no-sandbox'] });
