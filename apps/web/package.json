@@ -9,7 +9,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.5",
     "@vitejs/plugin-react": "^4.7.0",
     "clsx": "^2.1.1",
     "framer-motion": "^14.7.1",
