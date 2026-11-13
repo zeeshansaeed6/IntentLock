@@ -10,11 +10,12 @@ import { logger, maskSecrets } from './config/logger.js';
 import { approveIntent, createIntent, rejectIntent, revokeIntent } from './agent/graph.js';
 import { eventBus } from './agent/events.js';
 import { store } from './store/memory.js';
-import { runScenario, type ScenarioName } from './scenarios/runner.js';
+import { runScenario, RED_TEAM_ATTACKS, type ScenarioName } from './scenarios/runner.js';
 import { processWebhook } from './integrations/airwallex/webhooks.js';
 import { getGateway } from './integrations/airwallex/gateway.js';
 import { getRepository } from './store/repository.js';
 import { getCompanyConfig } from './seed/loader.js';
+import { decideTreasury, DEFAULT_SAAS_TERMS } from './domain/treasury/engine.js';
 import {
   authMiddleware,
   requireAuth,
@@ -356,7 +357,9 @@ app.post('/api/scenarios/:name/run', expensiveLimiter, (req: AuthenticatedReques
   const allowed = ['pass', 'limit', 'mcc', 'currency', 'redteam', 'pricehike', 'judge'];
   const scenarioName = String(req.params.name);
   if (!allowed.includes(scenarioName)) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Unknown scenario.' } });
-  const result = await runScenario(scenarioName as ScenarioName);
+  const attack = z.enum(RED_TEAM_ATTACKS).optional().safeParse(req.body?.attack);
+  if (!attack.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: `attack must be one of: ${RED_TEAM_ATTACKS.join(', ')}.` } });
+  const result = await runScenario(scenarioName as ScenarioName, { attack: attack.data });
   return res.status(202).json(result);
 });
 
@@ -486,7 +489,16 @@ app.get('/api/audit', (req: AuthenticatedRequest, res) => {
   return res.json(scoped);
 });
 
-app.get('/api/company', (_req, res) => res.json(getCompanyConfig()));
+app.get('/api/company', (_req, res) => {
+  const company = getCompanyConfig();
+  const projection = decideTreasury({
+    currentBalanceMinor: company.currentBalanceMinor,
+    reserveFloorMinor: company.reserveFloorMinor,
+    weeks: company.weeks.map((w) => ({ inflowMinor: w.inflowMinor, outflowMinor: w.outflowMinor })),
+    terms: DEFAULT_SAAS_TERMS,
+  });
+  return res.json({ ...company, vendorTerms: DEFAULT_SAAS_TERMS, projection });
+});
 
 app.get('/api/stream', requireAuth, (req: AuthenticatedRequest, res) => {
   res.status(200).set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });

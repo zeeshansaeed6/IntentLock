@@ -80,7 +80,7 @@ export const CommandCenterPage: React.FC = () => {
             <span className="spark-icon dashboard-icon-badge"><Sparkles size={14} /></span>
             <span>AUTONOMOUS PURCHASE AGENT · NATURAL LANGUAGE INTENT</span>
           </div>
-          <span className="premium-badge">CAPITALIO THEMED</span>
+          <span className="premium-badge">INTENT-BOUND</span>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -154,7 +154,7 @@ export const CommandCenterPage: React.FC = () => {
         />
       </div>
 
-      {/* Capitalio Treasury Intelligence Banner */}
+      {/* Treasury analytics banner */}
       <div
         className="panel group cursor-pointer transition-all duration-200 hover:border-white/20"
         style={{
@@ -175,11 +175,11 @@ export const CommandCenterPage: React.FC = () => {
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <strong style={{ fontSize: 13, color: '#fff' }}>Capitalio Treasury Intelligence & Asset Allocation</strong>
+              <strong style={{ fontSize: 13, color: '#fff' }}>Treasury Analytics & Runway Insights</strong>
               <span className="premium-badge">NEW</span>
             </div>
             <span style={{ fontSize: 11, color: '#94a3b8' }}>
-              Deep portfolio metrics, historical returns, S&P 500 benchmarks & AI smart rebalancing insights
+              Cash runway, reserve-floor headroom and spend analytics behind every purchase decision
             </span>
           </div>
         </div>

@@ -77,6 +77,13 @@ export type CompanyConfig = {
   departmentBudgetRemainingMinor: number;
   approvalThresholdMinor: number;
   weeks: Array<{ week: number; inflowMinor: number; outflowMinor: number }>;
+  vendorTerms?: { monthlyPriceMinor: number; annualPriceMinor: number };
+  projection?: {
+    monthly: { balancesMinor: number[]; breachWeek: number | null; minimumBalanceMinor: number };
+    annual: { balancesMinor: number[]; breachWeek: number | null; minimumBalanceMinor: number };
+    recommendation: 'monthly' | 'annual' | 'defer';
+    reasons: string[];
+  };
 };
 
 export type UserItem = {
@@ -187,10 +194,12 @@ export async function fetchAudit(): Promise<AuditItem[]> {
   return res.json();
 }
 
-export async function triggerScenario(name: string): Promise<ScenarioResult> {
+export async function triggerScenario(name: string, attack?: string): Promise<ScenarioResult> {
   const res = await fetch(`${API_BASE}/api/scenarios/${name}/run`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
+    body: JSON.stringify(attack ? { attack } : {}),
   });
   if (!res.ok) throw new Error(`Scenario run failed`);
   return res.json();

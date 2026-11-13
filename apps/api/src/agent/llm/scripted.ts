@@ -1,5 +1,6 @@
 import { purchaseProposalSchema, type PurchaseProposal } from '@intentlock/shared';
 import type { LLMClient } from './types.js';
+import { DEFAULT_SAAS_TERMS, HIKED_SAAS_TERMS } from '../../domain/treasury/engine.js';
 
 export class ScriptedLLM implements LLMClient {
   readonly providerName = 'scripted';
@@ -34,10 +35,14 @@ export class ScriptedLLM implements LLMClient {
     const isAnnual = isRedTeam || /annual|yearly|pay annually/i.test(combined);
     const billingPreference: 'monthly' | 'annual' = isAnnual ? 'annual' : 'monthly';
 
-    const monthlyPriceMinor = isCloudGpu ? amountMinor : 30000;
-    const annualPriceMinor = isCloudGpu ? amountMinor * 12 : 500000;
+    const priceHike = !isRedTeam && /raised the price|price hike|price increase/i.test(combined);
+    const saasTerms = priceHike ? HIKED_SAAS_TERMS : DEFAULT_SAAS_TERMS;
+    const monthlyPriceMinor = isCloudGpu ? amountMinor : saasTerms.monthlyPriceMinor;
+    const annualPriceMinor = isCloudGpu ? amountMinor * 12 : saasTerms.annualPriceMinor;
 
-    const rationale = isRedTeam
+    const rationale = priceHike
+      ? 'Vendor email raised prices by 50%; re-evaluating against the reserve floor.'
+      : isRedTeam
       ? 'Extracted terms from invoice attempting $5,000 annual billing.'
       : isCloudGpu
         ? `Cloud GPU compute allocated within explicit user budget of $${amountMinor / 100}.`

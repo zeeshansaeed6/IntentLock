@@ -27,7 +27,7 @@ import { Button } from './components/Button';
 import { LandingPage } from './pages/Landing';
 import { LoginPage } from './pages/Login';
 import { CommandCenterPage } from './pages/CommandCenter';
-import { CapitalioAnalyticsPage } from './pages/CapitalioAnalytics';
+import { AnalyticsPage } from './pages/Analytics';
 import { IntentsPage } from './pages/Intents';
 import { CardsPage } from './pages/Cards';
 import { TransactionsPage } from './pages/Transactions';
@@ -257,7 +257,7 @@ export default function App() {
           path="/analytics"
           element={
             <ConsoleLayout>
-              <CapitalioAnalyticsPage />
+              <AnalyticsPage />
             </ConsoleLayout>
           }
         />

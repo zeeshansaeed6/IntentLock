@@ -10,7 +10,7 @@ const SCENARIO_STEPS = [
   { name: 'mcc', title: 'Step 3/7: Unauthorized MCC', narration: 'Declined: Merchant category 5812 (Dining) is outside allowed SaaS MCC.' },
   { name: 'currency', title: 'Step 4/7: Currency Mismatch', narration: 'Declined: EUR currency rejected against USD-only contract.' },
   { name: 'redteam', title: 'Step 5/7: Prompt Injection Defense', narration: 'Hostile vendor terms safely parsed; limits and merchant locked.' },
-  { name: 'pricehike', title: 'Step 6/7: Post-Approval Price Hike', narration: 'Secondary surcharge detected; card frozen immediately.' },
+  { name: 'pricehike', title: 'Step 6/7: Post-Approval Price Hike', narration: 'Vendor raises prices 50%. The agent re-decides monthly to defer, freezes the old card, and issues no new spending authority.' },
   { name: 'judge', title: 'Step 7/7: Full Verification Suite', narration: 'All 7 tracks checked against runtime enforcement.' },
 ];
 

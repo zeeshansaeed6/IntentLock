@@ -87,7 +87,9 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
     approvalThresholdMinor: company.approvalThresholdMinor,
   });
 
-  const state = policy.ok ? (policy.requiresApproval ? 'PENDING_APPROVAL' : 'ACTIVE') : 'DRAFT';
+  // A deferred purchase carries zero spending authority: no card is ever issued for it.
+  const canSpend = policy.ok && treasury.recommendation !== 'defer';
+  const state = canSpend ? (policy.requiresApproval ? 'PENDING_APPROVAL' : 'ACTIVE') : 'DRAFT';
   const decision = policy.ok ? treasury.recommendation : 'defer';
   const allowedMerchantNames = Array.from(new Set([proposal.merchantName, ...templateConfig.allowedMerchants]));
 
@@ -100,12 +102,12 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
     allowed_mcc: templateConfig.allowedMcc,
     currency: 'USD',
     allowed_currencies: templateConfig.allowedCurrencies,
-    max_per_transaction_minor: policy.ok ? perTransactionCap : 0,
-    max_total_minor: policy.ok ? cardLimitMinor(totalCap, company.departmentBudgetRemainingMinor) : 0,
+    max_per_transaction_minor: canSpend ? perTransactionCap : 0,
+    max_total_minor: canSpend ? cardLimitMinor(totalCap, company.departmentBudgetRemainingMinor) : 0,
     max_transactions: templateConfig.defaultMaxTransactions,
     valid_from: now.toISOString(),
     expires_at: expiresAt.toISOString(),
-    requires_human_approval: policy.requiresApproval,
+    requires_human_approval: canSpend && policy.requiresApproval,
     policy_snapshot: {
       reserve_floor_minor: company.reserveFloorMinor,
       dept_budget_remaining_minor: company.departmentBudgetRemainingMinor,
@@ -117,8 +119,14 @@ export async function createIntent(userRequest: string, untrustedContext?: strin
   };
 
   const contract = signContract(draft, env.INTENT_HMAC_SECRET);
-  emit('policy_gate', policy.ok ? 'Policy gate passed' : 'Policy gate blocked proposal', policy.ok ? `Deterministic policy checks passed (${policy.requiresApproval ? 'awaiting human approval' : 'auto-approved'}).` : policy.failures.map((failure) => failure.reason).join(' '), policy.ok ? 'green' : 'rose', { intentId: contract.intent_id }, ownerId);
-  emit('sign', policy.ok ? 'Intent contract sealed' : 'Safe denial sealed', `HMAC-SHA256 · ${contract.intent_id}`, policy.ok ? 'green' : 'rose', undefined, ownerId);
+  const gateTitle = !policy.ok ? 'Policy gate blocked proposal' : canSpend ? 'Policy gate passed' : 'Purchase deferred';
+  const gateDetail = !policy.ok
+    ? policy.failures.map((failure) => failure.reason).join(' ')
+    : canSpend
+      ? `Deterministic policy checks passed (${policy.requiresApproval ? 'awaiting human approval' : 'auto-approved'}).`
+      : `Treasury deferred the purchase until ${reconsiderOn.slice(0, 10)}; no card will be issued. ${treasury.reasons[0]}`;
+  emit('policy_gate', gateTitle, gateDetail, canSpend ? 'green' : policy.ok ? 'amber' : 'rose', { intentId: contract.intent_id }, ownerId);
+  emit('sign', canSpend ? 'Intent contract sealed' : 'Safe denial sealed', `HMAC-SHA256 · ${contract.intent_id}`, canSpend ? 'green' : 'rose', undefined, ownerId);
   const record: IntentRecord = { contract, policy, owner_id: ownerId, createdAt: now.toISOString() };
   store.intents.unshift(record);
   if (record.contract.state === 'ACTIVE') await issueCard(record);

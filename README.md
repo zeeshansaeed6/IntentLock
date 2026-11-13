@@ -211,7 +211,7 @@ Click **Judge Mode** in the top bar. It steps through seven runtime scenarios wi
 | 3 | Unauthorized MCC (5812 Dining) | Declined (`MCC_NOT_ALLOWED`). |
 | 4 | Currency mismatch (EUR on a USD contract) | Declined (`CURRENCY_NOT_ALLOWED`). |
 | 5 | Prompt injection in a vendor document | Parsed safely; limits and merchant stay locked. |
-| 6 | Post-approval price hike | Old card frozen, re-decision under a new contract. |
+| 6 | Post-approval price hike | Vendor raises prices 50%; the agent revises monthly to defer, the old card is frozen, and the replacement contract carries zero spending authority. |
 | 7 | Full verification suite | All checks together. |
 
 ### Suggested 3-minute walkthrough
