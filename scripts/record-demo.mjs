@@ -61,11 +61,23 @@ const browser = await chromium.launch({ executablePath: chromiumPath, args: ['--
 }
 
 fs.mkdirSync(outDir, { recursive: true });
-const rawDir = path.join(outDir, 'raw');
-fs.rmSync(rawDir, { recursive: true, force: true });
-const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir: rawDir, size: { width: 1280, height: 720 } }, acceptDownloads: true });
+const framesDir = path.join(outDir, 'frames');
+fs.rmSync(framesDir, { recursive: true, force: true });
+fs.mkdirSync(framesDir, { recursive: true });
+const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, acceptDownloads: true });
 await context.addInitScript(OVERLAY);
 const page = await context.newPage();
+
+// Capture frames through the DevTools screencast (no dependency on Playwright's bundled ffmpeg).
+const frames = [];
+const cdp = await context.newCDPSession(page);
+cdp.on('Page.screencastFrame', ({ data, metadata, sessionId }) => {
+  const file = path.join(framesDir, `f${String(frames.length).padStart(6, '0')}.jpg`);
+  fs.writeFileSync(file, Buffer.from(data, 'base64'));
+  frames.push({ file, t: metadata.timestamp });
+  cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => {});
+});
+await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 85, maxWidth: 1280, maxHeight: 720, everyNthFrame: 1 });
 
 let section = 'IntentLock';
 const say = async (text, ms) => {
@@ -234,11 +246,23 @@ section = 'IntentLock';
 await say('The agent can be wrong. The money can\'t. Worst-case loss is bounded by the card cap, enforced in three layers. Sandbox only.', 5200);
 await page.evaluate(() => window.__say?.('', ''));
 
-console.log(`recorded ${stamp()} of footage`);
-const video = page.video();
+console.log(`recorded ${stamp()} of footage, ${frames.length} frames`);
+await cdp.send('Page.stopScreencast').catch(() => {});
 await context.close();
 await browser.close();
-const raw = await video.path();
+
+// Build a variable-frame-rate timeline from the capture timestamps, then encode at a constant 25 fps.
+const list = frames
+  .map((f, i) => {
+    const next = frames[i + 1];
+    const duration = next ? Math.max(0.01, next.t - f.t) : 1;
+    return `file '${f.file}'\nduration ${duration.toFixed(4)}`;
+  })
+  .join('\n');
+const listFile = path.join(outDir, 'frames.txt');
+fs.writeFileSync(listFile, `${list}\nfile '${frames[frames.length - 1].file}'\n`);
 const mp4 = path.join(outDir, 'IntentLock-demo.mp4');
-execFileSync('ffmpeg', ['-y', '-i', raw, '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', mp4], { stdio: 'ignore' });
+execFileSync('ffmpeg', ['-y', '-f', 'concat', '-safe', '0', '-i', listFile, '-vf', 'fps=25,format=yuv420p', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-movflags', '+faststart', mp4], { stdio: 'inherit' });
+fs.rmSync(framesDir, { recursive: true, force: true });
+fs.rmSync(listFile, { force: true });
 console.log('wrote', mp4);
