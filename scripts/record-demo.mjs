@@ -1,7 +1,7 @@
 // Records a captioned walkthrough of the running app (about 4.5 minutes) and converts it to MP4.
 // Usage: start the app (npm run dev, or build + vite preview on :5173), then `node scripts/record-demo.mjs`.
 // Env: APP_URL (default http://localhost:5173), ADMIN_PASSWORD (default: the .env.example value), CHROMIUM_PATH.
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -86,9 +86,37 @@ cdp.on('Page.screencastFrame', ({ data, metadata, sessionId }) => {
 await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 85, maxWidth: 1280, maxHeight: 720, everyNthFrame: 1 });
 
 let section = 'IntentLock';
+// Optional narration: each caption is spoken with espeak-ng (when installed) and the recording waits
+// for the line to finish, so voice and screen stay in sync. Set NARRATE=0 to record silently.
+const NARRATE = process.env.NARRATE !== '0' && spawnSync('espeak-ng', ['--version']).status === 0;
+const VOICE = process.env.TTS_VOICE ?? 'en-us+f3';
+const SPEED = process.env.TTS_SPEED ?? '190';
+const narration = [];
+const audioDir = path.join(outDir, 'audio');
+if (NARRATE) {
+  fs.rmSync(audioDir, { recursive: true, force: true });
+  fs.mkdirSync(audioDir, { recursive: true });
+}
+const PRONOUNCE = [
+  [/HMAC-SHA256/g, 'H-mac S-H-A 256'], [/HMAC/g, 'H-mac'], [/\bMCC\b/g, 'M-C-C'], [/\bLLM\b/g, 'L-L-M'],
+  [/\bJSON\b/g, 'jay-son'], [/\bAPI\b/g, 'A-P-I'], [/httpOnly/g, 'H-T-T-P only'], [/_/g, ' '], [/\$([\d,]+(?:\.\d+)?)/g, '$1 dollars'],
+];
+const speakable = (text) => PRONOUNCE.reduce((t, [re, to]) => t.replace(re, to), text).replace(/\s+/g, ' ');
+const synthesize = (text) => {
+  const file = path.join(audioDir, `${String(narration.length).padStart(3, '0')}.wav`);
+  execFileSync('espeak-ng', ['-v', VOICE, '-s', SPEED, '-p', '52', '-w', file, speakable(text)]);
+  const seconds = (fs.statSync(file).size - 44) / (22050 * 2);
+  return { file, seconds };
+};
 const say = async (text, ms) => {
   await page.evaluate(([t, s]) => window.__say?.(s, t), [text, section]);
-  await sleep(ms);
+  let wait = ms;
+  if (NARRATE && text) {
+    const { file, seconds } = synthesize(text);
+    narration.push({ file, startedAt: Date.now() / 1000 });
+    wait = Math.max(ms, seconds * 1000 + 450);
+  }
+  await sleep(wait);
 };
 const highlight = (sel) => page.evaluate((s) => window.__hl?.(s), sel);
 const glide = async (locator) => {
@@ -272,3 +300,16 @@ execFileSync('ffmpeg', ['-y', '-f', 'concat', '-safe', '0', '-i', listFile, '-vf
 fs.rmSync(framesDir, { recursive: true, force: true });
 fs.rmSync(listFile, { force: true });
 console.log('wrote', mp4);
+
+if (NARRATE && narration.length > 0) {
+  // Place every spoken line at its on-screen time, mix, normalise loudness and mux onto the video.
+  const t0 = frames[0].t;
+  const inputs = narration.flatMap((n) => ['-i', n.file]);
+  const delays = narration.map((n, i) => `[${i + 1}:a]adelay=${Math.max(0, Math.round((n.startedAt - t0) * 1000))}:all=1[a${i}]`);
+  const mixIn = narration.map((_, i) => `[a${i}]`).join('');
+  const graph = `${delays.join(';')};${mixIn}amix=inputs=${narration.length}:normalize=0:dropout_transition=0,aresample=44100,loudnorm=I=-16:TP=-1.5:LRA=11[aout]`;
+  const voiced = path.join(outDir, 'IntentLock-demo-voice.mp4');
+  execFileSync('ffmpeg', ['-y', '-i', mp4, ...inputs, '-filter_complex', graph, '-map', '0:v', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', voiced], { stdio: 'inherit' });
+  fs.rmSync(audioDir, { recursive: true, force: true });
+  console.log('wrote', voiced);
+}
