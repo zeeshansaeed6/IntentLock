@@ -42,7 +42,9 @@ export const JudgeBar: React.FC = () => {
         setJudge({
           narration: result.isSimulated
             ? 'Full verification suite completed with simulated fallbacks.'
-            : 'All 7 tracks verified against real Airwallex sandbox cards.',
+            : useStore.getState().health?.airwallex === 'sandbox'
+              ? 'All 7 tracks verified against real Airwallex sandbox cards.'
+              : 'All 7 tracks verified against the built-in mock gateway. Connect Airwallex sandbox keys to run them on real cards.',
         });
       }
       addToast(`${stepData.title} completed`, 'green');
